@@ -1,0 +1,323 @@
+{
+  "location": "India",
+  "brand": "Material",
+  "site": "material.in",
+  "brandKeywords": [
+    "material.in",
+    "material tiles online",
+    "material interior surfaces",
+    "buy tiles laminates wallpaper online india"
+  ],
+  "_note": "Attribute vocabularies are NOT invented. Every value under `attributes` is taken from Material-Metafield-Research.html §§4-8, which read them off a live competitor catalogue (Material Depot, Aug 2026). Keyword lists ARE written — they are search phrases, not a controlled list — but every one is built out of the vocabulary above it plus Indian-market intent modifiers. `panels` is research-backed the same way (§8, a captured PLP). `stone` is NOT: §9 is explicitly 'a sketch to be confirmed, not research findings', and its entry carries `\"_sourced\": \"sketch\"` to say so. It exists at all because lib/productCreate.js hard-throws on an unresolved category, so no entry means a stone product cannot be created — a worse failure than a thin vocabulary. Wood and Hardware stay out: §9 records no benchmark for Hardware at all, and Wood's fields are the same unconfirmed sketch with nothing waiting on them.",
+  "shared": {
+    "colourFamily": ["Grey", "Brown", "White", "Beige", "Blue", "Black", "Multi"],
+    "surface": ["Floor", "Wall", "Both", "Ceiling", "Exterior"],
+    "intentModifiers": [
+      "price",
+      "online",
+      "buy online india",
+      "near me",
+      "design",
+      "catalogue",
+      "per sq ft price"
+    ]
+  },
+  "categories": {
+    "tiles": {
+      "label": "Tiles",
+      "productType": "Tiles",
+      "collectionHandle": "tiles",
+      "priceUnit": "Sq. Ft.",
+      "attributes": {
+        "material": ["Vitrified", "Ceramic", "Porcelain", "Full-body Vitrified", "Glass"],
+        "finish": ["Matte", "Glossy", "Carving Matte", "High Gloss", "Glue Matte"],
+        "look": ["Marble", "Cement", "Wood", "Terrazzo", "Zellige", "Stone", "Fabric", "Metallic"],
+        "subCategory": [
+          "Bathroom", "Bedroom", "Dado", "Designer", "Floral", "Geometric", "Handmade",
+          "Herringbone", "Monochrome", "Outdoor", "Plain", "Punch", "Terracotta",
+          "Terrazzo", "Vitrified"
+        ],
+        "surface": ["Floor", "Wall", "Both", "Ceiling", "Exterior"],
+        "application": ["Bathroom", "Kitchen", "Living room", "Bedroom", "Balcony", "Outdoor"],
+        "slipRating": ["R9", "R10", "R11", "R12", "R13"],
+        "size": ["1200 × 600 mm", "600 × 600 mm", "600 × 300 mm", "450 × 300 mm", "300 × 300 mm"],
+        "thicknessMm": [9, 8, 12, 10, 6],
+        "marbleType": ["Breccia", "Statuario", "Calacatta"]
+      },
+      "keywords": {
+        "exact": [
+          "vitrified tiles",
+          "ceramic wall tiles",
+          "matte finish floor tiles",
+          "wood look tiles",
+          "marble look vitrified tiles",
+          "anti skid bathroom tiles",
+          "terrazzo tiles",
+          "zellige tiles"
+        ],
+        "phrase": [
+          "vitrified tiles price per sq ft",
+          "600x600 floor tiles price",
+          "1200x600 tiles design",
+          "glossy vs matte tiles for living room",
+          "porcelain tiles for kitchen",
+          "outdoor tiles anti skid r11",
+          "cement look tiles for wall",
+          "buy floor tiles online india"
+        ],
+        "broad": [
+          "floor tiles online india",
+          "wall tiles design",
+          "bathroom tiles",
+          "kitchen tiles",
+          "designer tiles india",
+          "full body vitrified tiles"
+        ]
+      },
+      "longTail": [
+        "wood look floor tile 1200x200 mm matte finish",
+        "statuario marble look vitrified tile 1200x600",
+        "r11 anti skid tiles for balcony and outdoor",
+        "herringbone pattern floor tiles for living room",
+        "9mm vitrified tiles price per box",
+        "zellige look ceramic wall tiles for kitchen dado"
+      ],
+      "negative": [
+        "tile adhesive",
+        "tile grout",
+        "second hand tiles",
+        "tile cutter machine",
+        "tile removal",
+        "tiles wholesale market",
+        "free tile samples"
+      ]
+    },
+    "laminates": {
+      "label": "Laminates",
+      "productType": "Laminates",
+      "collectionHandle": "laminates",
+      "priceUnit": "Sheet",
+      "attributes": {
+        "series": ["Wooden Effect", "Plain Solids", "Marbles & Stones", "Geometric & Abstracts", "Fluted"],
+        "finish": ["Texture", "High Gloss", "Suede", "Matte", "Glossy"],
+        "material": ["Acrylic", "ASA", "PVC", "PETG", "WPC Fibre"],
+        "grade": ["Decorative", "Liner", "Compact", "Exterior"],
+        "useCase": ["Wardrobe", "Kitchen shutters", "Wall panelling"],
+        "application": ["Wardrobe", "Kitchen shutters", "Wall panelling"],
+        "size": ["8 ft × 4 ft"],
+        "thicknessMm": [1, 0.8, 1.25, 1.5, 2]
+      },
+      "keywords": {
+        "exact": [
+          "decorative laminates",
+          "acrylic laminate sheet",
+          "high gloss laminate",
+          "suede finish laminate",
+          "fluted laminate panel",
+          "wooden effect laminate",
+          "pvc laminate sheet",
+          "1mm laminate sheet"
+        ],
+        "phrase": [
+          "laminate sheet price 8x4",
+          "acrylic vs pvc laminate for wardrobe",
+          "high gloss laminate for kitchen shutters",
+          "1mm vs 0.8mm laminate difference",
+          "marble finish laminate sheet",
+          "textured laminate for wall panelling",
+          "buy laminate sheets online india"
+        ],
+        "broad": [
+          "laminate sheets india",
+          "wardrobe laminate design",
+          "kitchen shutter laminate",
+          "wall panelling laminate",
+          "laminate catalogue"
+        ]
+      },
+      "longTail": [
+        "1mm wooden effect laminate sheet 8ft x 4ft price",
+        "acrylic high gloss laminate for modular kitchen shutters",
+        "suede finish plain solid laminate for wardrobe",
+        "fluted laminate panel for living room wall",
+        "0.8mm liner grade laminate sheet price"
+      ],
+      "negative": [
+        "laminate flooring",
+        "laminate repair",
+        "second hand laminate",
+        "laminating machine",
+        "laminate pouch",
+        "laminates wholesale dealer"
+      ]
+    },
+    "wallpaper": {
+      "label": "Wallpaper",
+      "productType": "Wallpaper",
+      "collectionHandle": "wallpaper",
+      "priceUnit": "Sq. Ft.",
+      "attributes": {
+        "pattern": ["Plain & textured", "Floral", "Geometric", "Mural"],
+        "series": ["Geometric & Abstracts", "Tropical Florals", "Textured Details", "Plain Solids", "Fabric Textures"],
+        "material": ["Non-woven", "PVC", "Canvas", "Handmade", "Soft Feel"],
+        "application": ["Bedroom", "Living room", "Children's room"],
+        "size": ["10000 × 550 mm", "5000 × 1050 mm"],
+        "rollLengthM": [10, 5, 9.5, 5.2],
+        "rollWidthMm": [550, 1050, 533]
+      },
+      "keywords": {
+        "exact": [
+          "wallpaper for walls",
+          "non woven wallpaper",
+          "floral wallpaper",
+          "geometric wallpaper",
+          "wall mural wallpaper",
+          "textured wallpaper",
+          "canvas wallpaper",
+          "kids room wallpaper"
+        ],
+        "phrase": [
+          "wallpaper price per sq ft india",
+          "wallpaper for bedroom walls",
+          "custom mural wallpaper online",
+          "non woven vs pvc wallpaper",
+          "living room wallpaper designs",
+          "washable wallpaper for kids room",
+          "buy wallpaper online india"
+        ],
+        "broad": [
+          "wallpaper india",
+          "wallpaper designs",
+          "bedroom wallpaper",
+          "living room wallpaper",
+          "wallpaper roll price"
+        ]
+      },
+      "longTail": [
+        "non woven floral wallpaper roll 10m x 550mm price",
+        "custom mural wallpaper per sq ft with 15 percent wastage",
+        "tropical florals wallpaper for living room feature wall",
+        "plain textured wallpaper for bedroom india",
+        "geometric wallpaper roll 5m x 1050mm"
+      ],
+      "negative": [
+        "wallpaper hd download",
+        "mobile wallpaper",
+        "desktop wallpaper",
+        "free wallpaper",
+        "wallpaper removal",
+        "wallpaper installation service only"
+      ]
+    },
+    "panels": {
+      "label": "Panels",
+      "productType": "Panels",
+      "collectionHandle": "panels",
+      "priceUnit": "Piece",
+      "attributes": {
+        "material": ["Charcoal", "PVC", "PU", "MDF", "WPC"],
+        "finish": ["Texture", "Matte", "Velvet", "Glossy", "Metallic"],
+        "series": ["Wooden Panels", "Marbles & Stones", "Geometric & Abstracts", "Plain Solids", "Wooden Effect"],
+        "application": ["Living room", "Bedroom", "Office", "Hotel", "Restaurant"],
+        "surface": ["Wall", "Ceiling", "Exterior"],
+        "thicknessMm": [4, 5, 6, 8, 12]
+      },
+      "keywords": {
+        "exact": [
+          "charcoal wall panels",
+          "wpc wall panel",
+          "fluted wall panel",
+          "pvc wall panel",
+          "wooden louvers",
+          "mdf fluted panel",
+          "pu wall panel",
+          "exterior wall panel"
+        ],
+        "phrase": [
+          "charcoal panel price per piece",
+          "fluted wall panel design for living room",
+          "wpc vs pvc wall panel",
+          "louver panel for tv unit",
+          "waterproof wall panel for bathroom",
+          "exterior grade wall panel india",
+          "buy wall panels online india"
+        ],
+        "broad": [
+          "wall panels india",
+          "louvers design",
+          "fluted panel",
+          "wall panelling ideas",
+          "charcoal panels"
+        ]
+      },
+      "longTail": [
+        "charcoal fluted wall panel 9 ft price per piece",
+        "wpc louver panel for tv unit back wall",
+        "pvc wall panel for bathroom waterproof",
+        "uv stable exterior wall panel for facade india",
+        "mdf fluted panel for bedroom wall panelling"
+      ],
+      "negative": [
+        "solar panel",
+        "electrical panel",
+        "panel door",
+        "panel board",
+        "false ceiling service",
+        "second hand panels"
+      ]
+    },
+    "stone": {
+      "_sourced": "sketch — Material-Metafield-Research.html §9, explicitly 'a sketch to be confirmed, not research findings'. Depot's nearest equivalents (Quartz, Wall Cladding) were not captured; the crawl was interrupted. Only what §9 does record appears below: stone_type, the observed slab size, and per-sq-ft pricing. There is deliberately no `finish` or `look` list, so those values warn rather than being validated against a vocabulary nobody observed.",
+      "label": "Stone",
+      "productType": "Stone",
+      "collectionHandle": "stone",
+      "priceUnit": "Sq. Ft.",
+      "attributes": {
+        "stoneType": ["Quartz", "Granite", "Marble"],
+        "application": ["Kitchen countertop", "Vanity top", "Wall cladding", "Flooring"],
+        "surface": ["Floor", "Wall", "Both", "Exterior"],
+        "size": ["10.75 ft × 5.42 ft"]
+      },
+      "keywords": {
+        "exact": [
+          "quartz slab",
+          "granite slab",
+          "marble slab",
+          "kitchen countertop stone",
+          "stone wall cladding",
+          "engineered quartz countertop"
+        ],
+        "phrase": [
+          "quartz countertop price per sq ft india",
+          "granite vs quartz for kitchen",
+          "marble slab price per square feet",
+          "stone wall cladding for exterior",
+          "quartz slab size and thickness",
+          "buy quartz slabs online india"
+        ],
+        "broad": [
+          "quartz countertop",
+          "granite price india",
+          "marble slabs",
+          "stone cladding",
+          "countertop material"
+        ]
+      },
+      "longTail": [
+        "engineered quartz slab for kitchen countertop price per sq ft",
+        "natural stone wall cladding for exterior facade india",
+        "white marble slab for flooring price per square feet",
+        "granite countertop slab 10 ft price",
+        "quartz vs granite countertop for indian kitchen"
+      ],
+      "negative": [
+        "stone crusher",
+        "gem stone",
+        "kidney stone",
+        "tombstone",
+        "stone age",
+        "second hand granite"
+      ]
+    }
+  }
+}

@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>material-admin</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+
+<nav>
+  <h1>material-admin</h1>
+  <p class="sub">admin &amp; batch · :8081</p>
+
+  <div class="sec">Catalogue</div>
+  <a href="#create" class="on">Add product</a>
+  <a href="#audit">SEO audit</a>
+  <a href="#seo">SEO copy</a>
+  <a href="#images">Images</a>
+  <a href="#templates">Templates</a>
+  <a href="#rectify">Templates 2 · rectify</a>
+  <a href="#pdp">Templates 4 · PDP pack</a>
+
+  <div class="sec">Growth</div>
+  <a href="#signals">Signals</a>
+  <a href="#marketing">Marketing</a>
+  <a href="#ads">Ads events</a>
+
+  <div class="sec">Service</div>
+  <a href="#settings">Settings</a>
+  <a href="#routes">Routes</a>
+
+  <div id="health">checking…</div>
+</nav>
+
+<main>
+
+<!-- ── Add product ───────────────────────────────────────────────── -->
+<section id="create" class="on">
+  <h2>Add product</h2>
+  <p class="lede">
+    Fill in the attributes. The title, SEO title and meta description are <em>derived</em> from
+    them — don't write a title unless you need to override it. Preview first; nothing is written
+    until you press Create.
+  </p>
+
+  <h3>Identity</h3>
+  <div class="grid">
+    <div>
+      <label>Category *</label>
+      <select id="c-category">
+        <option value="Tiles">Tiles</option>
+        <option value="Laminates">Laminates</option>
+        <option value="Wallpaper">Wallpaper</option>
+      </select>
+    </div>
+    <div><label>SKU</label><input id="c-sku" placeholder="TL-90001"></div>
+    <div><label>Series</label><input id="c-series" placeholder="Marbles &amp; Stones"></div>
+    <div><label>Colour name</label><input id="c-colourName" placeholder="Carrara Mist"></div>
+    <div>
+      <label>Colour family <span title="comma separated">(list)</span></label>
+      <input id="c-colourFamily" placeholder="White, Grey">
+    </div>
+    <div><label>Look</label><input id="c-look" placeholder="Marble" list="l-look"></div>
+  </div>
+
+  <h3>Specification</h3>
+  <div class="grid">
+    <div><label>Material</label><input id="c-material" placeholder="Vitrified" list="l-material"></div>
+    <div><label>Finish</label><input id="c-finish" placeholder="Matte" list="l-finish"></div>
+    <div><label>Surface (list)</label><input id="c-surface" placeholder="Floor, Wall"></div>
+    <div><label>Pattern <span class="only">wallpaper</span></label><input id="c-pattern" placeholder="Floral"></div>
+    <div><label>Use case (list) <span class="only">laminates</span></label><input id="c-useCases" placeholder="Wardrobe"></div>
+    <div><label>Slip rating</label><input id="c-slipRating" placeholder="R10"></div>
+    <div><label>Applications (list)</label><input id="c-applications" placeholder="Living Room, Bedroom"></div>
+    <div><label>Design variants</label><input id="c-designVariants" type="number" placeholder="4"></div>
+  </div>
+
+  <h3>Commercial</h3>
+  <div class="grid">
+    <div><label>Price *</label><input id="c-price" type="number" step="0.01" placeholder="129"></div>
+    <div><label>Price unit</label><input id="c-priceUnit" placeholder="Sq. Ft."></div>
+    <div><label>Size label</label><input id="c-sizeLabel" placeholder="1200 x 600 mm"></div>
+    <div><label>Thickness (mm)</label><input id="c-thicknessMm" type="number" step="0.1" placeholder="9"></div>
+    <div><label>Pack unit</label><input id="c-packUnit" placeholder="box"></div>
+    <div><label>Pieces per pack</label><input id="c-piecesPerPack" type="number" placeholder="4"></div>
+    <div><label>Coverage per pack</label><input id="c-coveragePerPack" type="number" step="0.01" placeholder="31.2"></div>
+    <div><label>Sample price</label><input id="c-samplePrice" type="number" step="0.01" placeholder="199"></div>
+  </div>
+
+  <h3>Copy &amp; caveats</h3>
+  <div class="grid" style="grid-template-columns:1fr">
+    <div>
+      <label>Install caveats (one per line)</label>
+      <textarea id="c-installCaveats" placeholder="2-3 mm spacer is mandatory&#10;Please expect a slight variation of pattern"></textarea>
+    </div>
+    <div>
+      <label>Title override <span class="only">optional</span></label>
+      <input id="c-title" placeholder="(derived)">
+    </div>
+  </div>
+
+  <div class="row">
+    <button id="c-preview" class="primary">Preview</button>
+    <button id="c-apply" disabled>Create in Shopify</button>
+    <label style="margin:0"><input type="checkbox" id="c-active" style="width:auto"> create as ACTIVE</label>
+    <span id="c-msg" class="msg"></span>
+  </div>
+  <div class="note">
+    Products are created as <strong>DRAFT</strong> unless you tick ACTIVE — a live product with no
+    images is a page a shopper can reach the moment it's written.
+  </div>
+  <div id="c-derived"></div>
+  <pre id="c-out" hidden></pre>
+
+  <datalist id="l-look"></datalist>
+  <datalist id="l-material"></datalist>
+  <datalist id="l-finish"></datalist>
+</section>
+
+<!-- ── SEO audit ─────────────────────────────────────────────────── -->
+<section id="audit">
+  <h2>SEO audit</h2>
+  <p class="lede">Every product scored against the rubric. Click a row to load its copy in SEO copy.</p>
+  <div class="row" style="margin-top:0">
+    <select id="a-kind"><option value="product">Products</option><option value="collection">Collections</option></select>
+    <button id="a-run" class="primary">Run audit</button>
+    <span id="a-msg" class="msg"></span>
+  </div>
+  <div id="a-summary"></div>
+  <div id="a-table"></div>
+</section>
+
+<!-- ── SEO copy ──────────────────────────────────────────────────── -->
+<section id="seo">
+  <h2>SEO copy</h2>
+  <p class="lede">
+    Meta title, description and keywords are a template over stored metafields — no model call,
+    free and repeatable. The model only writes long-form body copy, and only if a key is set.
+  </p>
+  <div class="grid">
+    <div><label>Handle</label><input id="s-handle" placeholder="marble-floor-tile-tl-90001-..."></div>
+    <div>
+      <label>Kind</label>
+      <select id="s-kind"><option value="product">product</option><option value="collection">collection</option></select>
+    </div>
+  </div>
+  <div class="row">
+    <button id="s-gen" class="primary">Generate</button>
+    <label style="margin:0"><input type="checkbox" id="s-ai" style="width:auto"> use the model for body copy</label>
+    <button id="s-apply" disabled>Apply to Shopify</button>
+    <span id="s-msg" class="msg"></span>
+  </div>
+  <div id="s-derived"></div>
+  <pre id="s-out" hidden></pre>
+</section>
+
+<!-- ── Images ────────────────────────────────────────────────────── -->
+<section id="images">
+  <h2>Images</h2>
+  <p class="lede">
+    Gemini Vision reads your supplier photos, then generates one render per scene and attaches
+    them to the product. Scenes are per category.
+  </p>
+  <div class="grid">
+    <div><label>Product ID or handle</label><input id="i-product" placeholder="8778805870729"></div>
+    <div>
+      <label>Category</label>
+      <select id="i-category"><option>Tiles</option><option>Laminates</option><option>Wallpaper</option></select>
+    </div>
+  </div>
+  <div class="grid" style="grid-template-columns:1fr;margin-top:12px">
+    <div>
+      <label>Supplier photos</label>
+      <input id="i-files" type="file" accept="image/*" multiple>
+      <p class="hint">Read in the browser and sent as base64. Two or three angles beats one.</p>
+    </div>
+  </div>
+  <div id="i-scenes"></div>
+  <div class="row">
+    <button id="i-run" class="primary">Generate images</button>
+    <span id="i-msg" class="msg"></span>
+  </div>
+  <pre id="i-out" hidden></pre>
+</section>
+
+<!-- ── Templates ─────────────────────────────────────────────────── -->
+<section id="templates">
+  <h2>Templates</h2>
+  <p class="lede">
+    Every image that can be built from <em>one flat swatch</em> — no model call, no cost, a few
+    hundred milliseconds. Fixed geometry over your own photo: the size shot, the thickness shot,
+    the laid-floor grid, the pattern repeat.
+  </p>
+  <div class="grid">
+    <div>
+      <label>Size label</label>
+      <input id="t-size" value="600 x 600 mm" placeholder="1200 x 600 mm">
+      <p class="hint">Parsed by the same <code>parseSizeLabel</code> the product form uses — mm, cm, inch or ft.</p>
+    </div>
+    <div><label>Thickness (mm)</label><input id="t-thick" type="number" step="0.5" value="9"></div>
+    <div>
+      <label>Material</label>
+      <select id="t-material">
+        <option value="Vitrified">Vitrified (glazed)</option>
+        <option value="Ceramic">Ceramic (glazed)</option>
+        <option value="Porcelain">Porcelain (glazed)</option>
+        <option value="Full-body Vitrified">Full-body Vitrified</option>
+      </select>
+      <p class="hint">Glazed tiles get a pale body edge; full-body carries the face colour through.</p>
+    </div>
+    <div>
+      <label>Cells per side</label>
+      <select id="t-cols"><option>2</option><option selected>3</option><option>4</option></select>
+    </div>
+    <div>
+      <label>Output size (px)</label>
+      <select id="t-outsize">
+        <option value="900">900 — matches the benchmark</option>
+        <option value="1600" selected>1600</option>
+        <option value="2048">2048 — PDP zoom</option>
+        <option value="3000">3000</option>
+      </select>
+      <p class="hint">Capped by the photo: a 640px swatch cannot fill 2048.</p>
+    </div>
+  </div>
+  <div class="grid" style="grid-template-columns:1fr;margin-top:12px">
+    <div>
+      <label>Swatch photo</label>
+      <input id="t-file" type="file" accept="image/*">
+      <p class="hint">
+        Wants a <strong>flat, square-on</strong> shot of the surface — the kind of photo a supplier
+        sends. An angled studio render will look skewed when pasted into fixed geometry, which is
+        itself worth seeing once.
+      </p>
+    </div>
+  </div>
+  <div class="row">
+    <button id="t-run" class="primary">Build templates</button>
+    <span id="t-msg" class="msg"></span>
+  </div>
+  <div class="note">
+    Preview only — nothing is attached to a product and nothing is written to Shopify.
+    Right-click any result to save it.
+  </div>
+  <div id="t-derived"></div>
+  <div id="t-out-imgs" class="tpl-grid"></div>
+  <pre id="t-out" hidden></pre>
+
+  <h3>Studio shot — 3D render</h3>
+  <p class="lede" style="margin-top:0">
+    The same swatch, but built as an actual scene: a slab with real thickness on a floor,
+    two rectangular lights, a camera with a focal length. Roughness is a property of the
+    material here, so a matte and a polished tile genuinely differ — the one thing the
+    2D composite cannot express. Seconds rather than milliseconds, still no model call.
+  </p>
+  <div class="note">
+    Needs a Chrome on this machine (three.js renders inside a headless one, because Node
+    has no WebGL). Set <code>CHROME_PATH</code> if it is somewhere unusual.
+  </div>
+  <div class="grid">
+    <div>
+      <label>Finish</label>
+      <select id="s3-finish"></select>
+      <p class="hint">
+        The only thing that varies per product — it decides whether the surface scatters
+        light or mirrors it. Everything else (size, thickness, body and ground colour) is
+        read from the fields above.
+      </p>
+    </div>
+  </div>
+  <div class="row">
+    <button id="s3-run" class="primary">Render 3D studio</button>
+    <span id="s3-msg" class="msg"></span>
+  </div>
+  <div id="s3-out-img" class="tpl-grid"></div>
+</section>
+
+<!-- ── Templates 2 · rectify (OpenCV) ───────────────────────────── -->
+<section id="rectify">
+  <h2>Templates 2 · rectify a photo</h2>
+  <p class="lede">
+    Every template assumes a <strong>flat, square-on</strong> swatch. Hand one an angled
+    photo and it produces confident nonsense — the beige backdrop of a studio shot gets
+    pasted in and called a tile. This finds the tile's four corners and undoes the
+    camera's perspective, so a phone photo becomes a usable swatch.
+  </p>
+  <div class="note">
+    OpenCV does this, not sharp: sharp has affine transforms only, and straightening a
+    photo needs a four-point homography. Needs the Python venv —
+    <code>python3 -m venv .venv-cv &amp;&amp; ./.venv-cv/bin/pip install opencv-python-headless numpy</code>.
+  </div>
+  <div class="grid">
+    <div>
+      <label>Photo</label>
+      <input id="x-file" type="file" accept="image/*">
+      <p class="hint">A tile on a plainish background. The corners are found by colour, so texture is fine.</p>
+    </div>
+    <div>
+      <label>Size label <span class="only">optional</span></label>
+      <input id="x-size" value="600 x 600 mm" placeholder="1200 x 600 mm">
+      <p class="hint">Sets the output aspect, so a plank straightens to 2:1 rather than to whatever the camera saw.</p>
+    </div>
+    <div><label>Max edge (px)</label><input id="x-max" type="number" value="1600" step="100"></div>
+  </div>
+  <div class="row">
+    <button id="x-run" class="primary">Rectify</button>
+    <button id="x-use" disabled>Use as swatch for the templates</button>
+    <span id="x-msg" class="msg"></span>
+  </div>
+  <div id="x-note"></div>
+  <div id="x-out" class="tpl-grid"></div>
+</section>
+
+<!-- ── Templates 4 · Cycles PDP pack ─────────────────────────────── -->
+<section id="pdp">
+  <h2>Templates 4 · the Cycles PDP pack</h2>
+  <p class="lede">
+    A real path-traced render, not a composite. The tile is built as
+    <strong>actual geometry at its real size</strong> — a 1200 x 600 slab is 1.2 x 0.6 m
+    with a 3 mm joint and a 1.5 mm chamfer — and Cycles works out the light. Three
+    catalog-ready shots per SKU.
+  </p>
+  <p class="hint">
+    This is minutes, not milliseconds, and it needs Blender on the box. Nothing here
+    calls a model, so the cost is electricity.
+  </p>
+
+  <div class="row">
+    <button id="p-status">Check the engine</button>
+    <span id="p-engine" class="msg"></span>
+  </div>
+
+  <h3>1 · the room</h3>
+  <div class="grid">
+    <div>
+      <label>Room scene</label>
+      <select id="p-room"></select>
+      <p class="hint">
+        Every <code>.blend</code> in <code>lib/productImages/templates/</code>. Drop one in
+        and press Refresh — nothing to restart. The grey box is a calibration room for
+        checking tile scale and grout, not a product shot.
+      </p>
+    </div>
+    <div>
+      <label>&nbsp;</label>
+      <button id="p-rooms-refresh">Refresh the list</button>
+      <p class="hint" id="p-room-note"></p>
+    </div>
+    <div>
+      <label>Lighting</label>
+      <input id="p-lighting" type="number" value="1" step="0.25" min="0.25" max="6">
+      <p class="hint">
+        Multiplies the scene's own lamps and emissive surfaces. A bought interior is lit
+        for <em>mood</em>, and the floor is the product — 2 to 3 opens it up. Unlike
+        exposure this adds real light, so the tile's pattern keeps its contrast.
+      </p>
+    </div>
+    <div>
+      <label>Hero angle</label>
+      <select id="p-hero">
+        <option value="scene" selected>the scene's own camera</option>
+        <option value="auto">auto — higher, more floor</option>
+      </select>
+      <p class="hint">
+        The artist framed their kitchen; that is usually right. But a low camera views the
+        floor at a grazing angle and flattens a <strong>patterned</strong> tile to nothing —
+        pick auto for those.
+      </p>
+    </div>
+    <div>
+      <label>Exposure (EV)</label>
+      <input id="p-exposure" type="number" value="" step="0.2" min="-3" max="3" placeholder="auto">
+      <p class="hint">
+        Leave blank. Tone mapping only, so it lifts the black point too and flattens
+        texture — measured, +1.6 EV cost 18% of the tile's pattern contrast. Use Lighting first.
+      </p>
+    </div>
+  </div>
+
+  <h3>2 · the tile</h3>
+  <div class="grid">
+    <div>
+      <label>Swatch (flat, or rectified in Templates 2)</label>
+      <input id="p-file" type="file" accept="image/*">
+    </div>
+    <div>
+      <label>Size label</label>
+      <input id="p-size" value="1200 x 600 mm">
+      <p class="hint">Parsed for real millimetres. This is what sets the tile's size in the room.</p>
+    </div>
+    <div>
+      <label>Finish</label>
+      <select id="p-finish">
+        <option>matte</option>
+        <option>carving matte</option>
+        <option>glue matte</option>
+        <option>texture</option>
+        <option>suede</option>
+        <option>satin</option>
+        <option>glossy</option>
+        <option>high gloss</option>
+        <option selected>polished</option>
+      </select>
+      <p class="hint">Sets roughness and the clear coat. It is what the grazing shot exists to prove.</p>
+    </div>
+  </div>
+
+  <h3>3 · how it is laid</h3>
+  <div class="grid">
+    <div>
+      <label>Pattern</label>
+      <select id="p-pattern">
+        <option value="straight">straight — square slabs</option>
+        <option value="stagger_third" selected>stagger third — large format</option>
+        <option value="stagger_half">stagger half — brick bond</option>
+      </select>
+      <p class="hint">Herringbone is not in this build: it interlocks only at 2:1 and needs its own lattice.</p>
+    </div>
+    <div><label>Grout (mm)</label><input id="p-grout" type="number" value="3" min="0" max="20" step="0.5"></div>
+    <div><label>Grout colour</label><input id="p-grout-col" type="color" value="#404040"></div>
+    <div>
+      <label>Resolution (px, square)</label>
+      <input id="p-res" type="number" value="2048" min="512" max="4096" step="256">
+      <p class="hint">2048 is a PDP zoom. Drop to 768 while you are tuning — it is roughly 7x faster.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <button id="p-run" class="primary">Render the pack</button>
+    <button id="p-cheap">Quick look (768px)</button>
+    <span id="p-msg" class="msg"></span>
+  </div>
+  <div id="p-out" class="tpl-grid"></div>
+</section>
+
+<!-- ── Signals ───────────────────────────────────────────────────── -->
+<section id="signals">
+  <h2>Signals</h2>
+  <p class="lede">
+    GA4 funnel data → a relevance score and the Popular / Trending / Bestseller tags. Preview
+    computes everything and writes nothing.
+  </p>
+  <div class="row" style="margin-top:0">
+    <div><label>Window (days)</label><input id="g-days" type="number" value="28" style="width:90px"></div>
+    <button id="g-preview" class="primary">Preview</button>
+    <button id="g-sync">Sync for real</button>
+    <span id="g-msg" class="msg"></span>
+  </div>
+  <div class="note warn">
+    Needs <code>GCP_PROJECT_ID</code> and <code>GA4_DATASET</code>, and a GA4→BigQuery export
+    behind them. Without both it refuses rather than querying a guessed dataset.
+  </div>
+  <pre id="g-out" hidden></pre>
+</section>
+
+<!-- ── Marketing ─────────────────────────────────────────────────── -->
+<section id="marketing">
+  <h2>Marketing</h2>
+  <p class="lede">Journeys are data, not code. A channel with no key reports itself off rather than pretending.</p>
+  <div class="row" style="margin-top:0">
+    <button id="m-load" class="primary">Load journeys</button>
+    <span id="m-msg" class="msg"></span>
+  </div>
+  <div id="m-channels"></div>
+  <div id="m-list"></div>
+  <pre id="m-out" hidden></pre>
+</section>
+
+<!-- ── Ads ───────────────────────────────────────────────────────── -->
+<section id="ads">
+  <h2>Ads events</h2>
+  <p class="lede">
+    Builds the Meta Conversions API payload so you can check the hashing without firing anything.
+    Email and phone are SHA-256 hashed before they leave this process.
+  </p>
+  <div class="grid">
+    <div>
+      <label>Event</label>
+      <select id="d-event">
+        <option>Purchase</option><option>AddToCart</option><option>InitiateCheckout</option>
+        <option>ViewContent</option><option>SampleOrder</option>
+      </select>
+    </div>
+    <div><label>Order / cart id</label><input id="d-orderId" placeholder="5501234"></div>
+    <div><label>Value</label><input id="d-value" type="number" placeholder="2499"></div>
+    <div><label>Email</label><input id="d-email" placeholder="Test.User@Example.COM"></div>
+    <div><label>Phone</label><input id="d-phone" placeholder="+91 98765 43210"></div>
+    <div><label>fbclid</label><input id="d-fbclid" placeholder="IwZXh0bgNhZW0"></div>
+  </div>
+  <div class="row">
+    <button id="d-preview" class="primary">Build payload</button>
+    <span id="d-msg" class="msg"></span>
+  </div>
+  <div class="note">
+    Preview only — nothing is sent. Meta is unconfigured, so the send path reports itself off.
+  </div>
+  <pre id="d-out" hidden></pre>
+</section>
+
+<!-- ── Settings ──────────────────────────────────────────────────── -->
+<section id="settings">
+  <h2>Settings</h2>
+  <p class="lede">
+    Some routes need the <code>x-cron-secret</code> header. It's kept in this browser's
+    localStorage only — never sent anywhere but this service.
+  </p>
+  <div class="grid" style="grid-template-columns:1fr">
+    <div>
+      <label>CRON_SECRET</label>
+      <input id="x-secret" type="password" placeholder="from material-admin/.env">
+      <p class="hint">Find it with <code>grep CRON_SECRET material-admin/.env</code></p>
+    </div>
+  </div>
+  <div class="row"><button id="x-save" class="primary">Save</button><span id="x-msg" class="msg"></span></div>
+  <div class="note warn">
+    <strong>There is no staff login on this service yet.</strong> Every read endpoint is open to
+    anyone who can reach the port. Fine on localhost; it must close before this is deployed.
+  </div>
+</section>
+
+<!-- ── Routes ────────────────────────────────────────────────────── -->
+<section id="routes">
+  <h2>Routes</h2>
+  <p class="lede">Everything this service exposes.</p>
+  <div id="r-table"></div>
+</section>
+
+</main>
+
+<!-- Full-size viewer. Not a new tab: data: URLs cannot be navigated to. -->
+<div id="zoom" hidden>
+  <div id="zoom-label"></div>
+  <img id="zoom-img" alt="full size render">
+</div>
+<script src="/app.js"></script>
+</body>
+</html>

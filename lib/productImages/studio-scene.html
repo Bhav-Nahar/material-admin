@@ -1,0 +1,155 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<script type="importmap">
+{ "imports": {
+  "three": "__THREE__/build/three.module.js",
+  "three/addons/": "__THREE__/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
+
+const C = window.__CFG;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(C.size, C.size, false);
+renderer.setPixelRatio(1);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+// ACES is a FILM look: it rolls highlights off for a cinematic curve. A product shot
+// wants the opposite — the albedo as it is, because the texture is the thing being
+// sold. Calibrated below; 'none' measured far higher texture contrast.
+renderer.toneMapping = { none: THREE.NoToneMapping, linear: THREE.LinearToneMapping,
+                         aces: THREE.ACESFilmicToneMapping }[C.toneMapping] ?? THREE.NoToneMapping;
+renderer.toneMappingExposure = C.exposure;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+RectAreaLightUniformsLib.init();
+const scene = new THREE.Scene();
+
+/* ── TRIED AND REMOVED: RoomEnvironment image-based lighting ──────────────────
+   PMREMGenerator + RoomEnvironment is the obvious way to get "real studio lights",
+   and it measured WORSE: face texture contrast fell from 2.46 to about 1.9, because
+   an environment map lights every surface from every direction and flat ambient is
+   the enemy of a shot whose whole job is to show a texture.
+
+   It also could not be dialled back. With every lamp at zero AND envMapIntensity at
+   zero on all four materials the scene still rendered fully lit, so the env
+   contribution was not gated by the one control that should gate it. A parameter that
+   does not respond is worse than no parameter.
+
+   If it is ever revisited: the gap it was meant to close is REFLECTIONS, which matter
+   only for a polished finish, so the answer is probably a small env map applied to the
+   face alone at high roughness-dependent weight — not a room lighting the whole set. */
+
+/* ── the set ──────────────────────────────────────────────────────────────── */
+// ONE material for wall and floor, as in the approved version. Splitting them into
+// separate tones to make the junction visible was tried and reported as worse — the
+// horizon line it draws reads as a seam rather than a set.
+const ground = new THREE.MeshStandardMaterial({
+  color: new THREE.Color(C.wall), roughness: 0.92, metalness: 0,
+});
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(16, 16), ground);
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+const wall = new THREE.Mesh(new THREE.PlaneGeometry(16, 10), ground);
+wall.position.set(0, 5, -1.6);
+wall.receiveShadow = true;
+scene.add(wall);
+
+/* ── the unit, in METRES: 600 x 600 x 9 mm is 0.6 x 0.6 x 0.009 ───────────── */
+const W = C.widthMm / 1000, H = C.heightMm / 1000, T = Math.max(0.002, C.thicknessMm / 1000);
+
+const tex = new THREE.TextureLoader().load(C.texture, () => { state.ready = true; });
+tex.colorSpace = THREE.SRGBColorSpace;
+tex.anisotropy = 16;
+
+// Roughness IS the finish. A matte tile scatters, a polished one mirrors — the one
+// property a 2D composite cannot express, because it has no idea what the surface is.
+const face = new THREE.MeshStandardMaterial({
+  map: tex, roughness: C.roughness, metalness: 0,
+});
+const body = new THREE.MeshStandardMaterial({
+  color: new THREE.Color(C.body), roughness: 0.85, metalness: 0,
+});
+
+// BoxGeometry face order: +x, -x, +y, -y, +z, -z. Glaze on +z only.
+const tile = new THREE.Mesh(new THREE.BoxGeometry(W, H, T), [body, body, body, body, face, body]);
+tile.position.set(0, H / 2, 0);
+tile.rotation.y = THREE.MathUtils.degToRad(C.turnDeg);
+tile.rotation.x = THREE.MathUtils.degToRad(C.leanDeg);
+tile.castShadow = true;
+tile.receiveShadow = true;
+scene.add(tile);
+
+/* ── light ────────────────────────────────────────────────────────────────── */
+// A RectAreaLight is a real rectangle of light, which is why its highlight is a broad
+// band and not a dot — the effect the 2D version has to paint by hand.
+const key = new THREE.RectAreaLight(0xffffff, C.keyIntensity, 3.2, 2.4);
+key.position.set(1.9, 2.1, 2.4);
+key.lookAt(0, H / 2, 0);
+scene.add(key);
+
+const fill = new THREE.RectAreaLight(0xfff4e0, C.fillIntensity, 4, 3);
+fill.position.set(-2.6, 1.5, 2.2);
+fill.lookAt(0, H / 2, 0);
+scene.add(fill);
+
+// Dim on purpose: this exists to CAST, not to light. A bright directional gives the
+// hard-edged parallelogram that reads as clip art.
+const sun = new THREE.DirectionalLight(0xffffff, C.sunIntensity);
+sun.position.set(2.2, 3.4, 2.0);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.radius = C.shadowSoftness;
+sun.shadow.bias = -0.0004;
+Object.assign(sun.shadow.camera, { left: -1.6, right: 1.6, top: 1.6, bottom: -1.6, near: 0.1, far: 12 });
+scene.add(sun);
+
+scene.add(new THREE.HemisphereLight(0xffffff, new THREE.Color(C.wall), C.ambIntensity));
+
+// A separate light AIMED AT THE BACKDROP. This is the thing a real studio does that a
+// three-lamp setup does not: the background is lit on its own, so it carries a pool of
+// light and a falloff of its own rather than being a flat card behind the product.
+/* ── TRIED AND REMOVED: two ways to light the backdrop separately ────────────
+   A real studio lights its background on its own, so both of these looked right.
+
+   A RectAreaLight aimed at the wall blew the product out from both placements: in
+   front of the tile, 96% of the face clipped at intensity 1.4; moved BEHIND the tile
+   facing the wall — where a one-sided emitter physically should not reach a face
+   pointing at camera — it still took the face from mean 215 to 255.
+
+   A gradient baked into the wall's texture map could not spill by construction, and
+   still cost face contrast (2.48 -> 1.87) while the gradient itself did not read: the
+   backdrop's left-to-right spread measured -1 against the reference's +37, because
+   only about 1.3m of the wall is in frame at this lens.
+
+   What the reference actually has is a soft pool of light on a plain sweep, and the
+   2D compositor already produces that convincingly from studioGround(). If this is
+   revisited, the honest fix is a renderer with global illumination, where a backdrop
+   light behaves — not another way to fake one here. */
+
+/* ── camera ───────────────────────────────────────────────────────────────── */
+// Long lens, well back. A short lens close in splays the verticals and the unit reads
+// as a portrait rectangle; a product shot is near-orthographic.
+const rad = THREE.MathUtils.degToRad(C.camAzimuthDeg);
+const camera = new THREE.PerspectiveCamera(C.fov, 1, 0.05, 60);
+camera.position.set(-C.camDistance * Math.sin(rad), C.camHeight, C.camDistance * Math.cos(rad));
+camera.lookAt(0, C.targetY, 0);
+scene.add(camera);
+
+const state = { ready: false };
+(function frame() {
+  if (!state.ready) return requestAnimationFrame(frame);
+  renderer.render(scene, camera);
+  window.__png = renderer.domElement.toDataURL('image/png');
+  window.__done = true;
+})();
+
+window.addEventListener('error', (e) => { window.__error = String(e.message); });
+</script>

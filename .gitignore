@@ -1,0 +1,19 @@
+node_modules/
+.env
+.env.local
+*.log
+.DS_Store
+
+# Python virtualenv for rectify.py (OpenCV) — 167 MB, rebuild locally.
+.venv-cv/
+__pycache__/
+*.pyc
+
+# Room scenes are ASSETS, not source: 600 MB, and GitHub rejects any file over
+# 100 MB. Kitchen.blend alone is 382 MB. Keep them out of the repo and share them
+# out of band (or add Git LFS if they ever need to be versioned).
+lib/productImages/templates/*.blend
+*.blend1
+
+# Third-party addon source, vendored by accident rather than on purpose.
+blenderkit/

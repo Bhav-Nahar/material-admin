@@ -1,0 +1,30 @@
+{
+  "name": "material-admin",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "node --test",
+    "blender:bootstrap": "\"${BLENDER_PATH:-/Applications/Blender.app/Contents/MacOS/Blender}\" -b -noaudio -P lib/productImages/render_room.py -- --bootstrap lib/productImages/templates/greybox_kitchen.blend",
+    "blender:selfcheck": "\"${BLENDER_PATH:-/Applications/Blender.app/Contents/MacOS/Blender}\" -b -noaudio -P lib/productImages/render_room.py -- --selfcheck",
+    "blender:inspect": "\"${BLENDER_PATH:-/Applications/Blender.app/Contents/MacOS/Blender}\" -b -noaudio -P lib/productImages/render_room.py -- --inspect",
+    "blender:gpu": "node -e \"require('./lib/productImages/blenderRoom').engineStatus().then(s=>console.log(s.gpu&&s.gpu.usable?('GPU WORKS - '+s.gpu.why):('GPU UNUSABLE - '+(s.gpu?s.gpu.why:s.reason))))\""
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/cors": "^11.2.0",
+    "@fastify/rate-limit": "^10.3.0",
+    "@google-cloud/bigquery": "^7.9.0",
+    "dotenv": "^17.4.2",
+    "fastify": "^5.8.5",
+    "fastify-plugin": "^6.0.0",
+    "mongodb": "^7.5.0",
+    "pino-pretty": "^13.1.3",
+    "puppeteer-core": "^25.10.0",
+    "sharp": "^0.35.4",
+    "three": "^0.185.1"
+  }
+}
