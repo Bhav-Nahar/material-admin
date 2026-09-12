@@ -282,7 +282,7 @@ $('t-run').onclick = () => busy($('t-run'), async () => {
   const photo = await swatchB64('t-file');
   if (!photo) {
     $('t-msg').className = 'msg bad';
-    $('t-msg').textContent = 'pick a swatch photo, or rectify one in Templates 2';
+    $('t-msg').textContent = 'pick a swatch photo, or rectify one in Rectify a photo';
     return;
   }
   $('t-msg').className = 'msg';
@@ -358,7 +358,7 @@ $('s3-run').onclick = () => busy($('s3-run'), async () => {
   const photo = await swatchB64('t-file');
   if (!photo) {
     $('s3-msg').className = 'msg bad';
-    $('s3-msg').textContent = 'pick a swatch photo above, or rectify one in Templates 2';
+    $('s3-msg').textContent = 'pick a swatch photo above, or rectify one in Rectify a photo';
     return;
   }
   $('s3-msg').className = 'msg';
@@ -400,7 +400,7 @@ let rectified = null;
 
 function showRectifiedBanner() {
   $('t-derived').innerHTML = rectified
-    ? `<div class="note"><strong>Using the rectified swatch</strong> from Templates 2
+    ? `<div class="note"><strong>Using the rectified swatch</strong> from Rectify a photo
        (${rectified.output}). <a href="#" id="t-clear">Use the file input instead</a>.</div>`
     : '';
   const clear = $('t-clear');
@@ -492,7 +492,7 @@ async function loadRooms() {
   if (!rooms.length) {
     sel.innerHTML = '<option value="">— none —</option>';
     note.textContent = r.status === 404
-      ? 'the server predates Templates 4 — restart it'
+      ? 'the server predates the room renderer — restart it'
       : 'drop a .blend in lib/productImages/templates/, or run npm run blender:bootstrap';
     return;
   }
@@ -520,7 +520,7 @@ $('p-status').onclick = () => busy($('p-status'), async () => {
   // renderer that is already there. Which is exactly what happened.
   if (r.status === 404) {
     $('p-engine').textContent =
-      'this server does not have the endpoint — it booted before Templates 4 existed. Restart it.';
+      'this server does not have the endpoint — it booted before the room renderer existed. Restart it.';
     return;
   }
   if (!r.ok) {
@@ -550,7 +550,7 @@ const renderPack = (resolution, samples) => bothBusy(async () => {
     $('p-msg').className = 'msg bad';
     $('p-msg').textContent = !$('p-room').value
       ? 'no room scene — drop a .blend in templates/ and press Refresh'
-      : 'pick a swatch, or rectify one in Templates 2';
+      : 'pick a swatch, or rectify one in Rectify a photo';
     return;
   }
   $('p-msg').className = 'msg';

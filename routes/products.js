@@ -266,7 +266,7 @@ module.exports = async function (fastify) {
     }
   });
 
-  /* ── Templates 4 · the Cycles PDP pack ──────────────────────────────────────
+  /* ── Room renders · the Cycles PDP pack ─────────────────────────────────────
      Three endpoints rather than one, because a render is a JOB.
 
      A three-shot pack is minutes of path tracing, which is past every proxy's idle
