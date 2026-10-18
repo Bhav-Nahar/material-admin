@@ -96,7 +96,7 @@
       "label": "Laminates",
       "productType": "Laminates",
       "collectionHandle": "laminates",
-      "priceUnit": "Sheet",
+      "priceUnit": "Sheet", "showPerSqFt": true,
       "attributes": {
         "series": ["Wooden Effect", "Plain Solids", "Marbles & Stones", "Geometric & Abstracts", "Fluted"],
         "finish": ["Texture", "High Gloss", "Suede", "Matte", "Glossy"],
@@ -213,10 +213,11 @@
       "label": "Panels",
       "productType": "Panels",
       "collectionHandle": "panels",
-      "priceUnit": "Piece",
+      "priceUnit": "Piece", "showPerSqFt": true,
       "attributes": {
+        "look": ["Fluted", "Leather", "Woodgrain", "Stone-look", "Marble", "Fabric", "Solid colour"],
         "material": ["Charcoal", "PVC", "PU", "MDF", "WPC"],
-        "finish": ["Texture", "Matte", "Velvet", "Glossy", "Metallic"],
+        "finish": ["Texture", "Matte", "Velvet", "Glossy", "Metallic", "Textured", "High Gloss", "Suede"],
         "series": ["Wooden Panels", "Marbles & Stones", "Geometric & Abstracts", "Plain Solids", "Wooden Effect"],
         "application": ["Living room", "Bedroom", "Office", "Hotel", "Restaurant"],
         "surface": ["Wall", "Ceiling", "Exterior"],

@@ -120,3 +120,57 @@ a { color: var(--accent); }
 #zoom-img { cursor: zoom-in; background: #fff; }
 #zoom-img.fit { max-width: 100%; max-height: calc(100vh - 68px); cursor: zoom-in; }
 .tpl-grid img { cursor: zoom-in; }
+
+/* PDF images: a checkerboard so transparent cutouts read as transparent, and no crop. */
+#pi-out .pi-page { margin-top: 22px; }
+/* Page render in the left corner, sticky so it stays beside a long run of items. */
+#pi-out .pi-row { display: grid; grid-template-columns: minmax(220px, 340px) 1fr; gap: 16px; align-items: start; }
+#pi-out .pi-row > .tpl-grid, #pi-out .pi-row > .hint { margin-top: 16px; }
+#pi-out .pi-src { position: sticky; top: 12px; margin-top: 16px; border: 1px solid var(--line); line-height: 0; }
+#pi-out .pi-src img { display: block; width: 100%; background: none; cursor: zoom-in; }
+#pi-out .pi-src i { position: absolute; outline: 2px solid #2bb673; outline-offset: -1px; pointer-events: none; }
+#pi-out .pi-src i.bx-decor { outline: 1px dashed #999; }
+#pi-out .pi-src i.lit { outline: 3px solid #ff8a00; background: #ff8a0033; }
+#pi-out figure.lit { outline: 3px solid #ff8a00; }
+@media (max-width: 800px) { #pi-out .pi-row { grid-template-columns: 1fr; } #pi-out .pi-src { position: relative; top: 0; } }
+/* Fixed tiles: auto-fill keeps empty tracks, so 2 images on a page do not stretch to half the screen. */
+#pi-out .tpl-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+#pi-out h3 { margin: 0 0 -6px; font-size: 14px; }
+#pi-out img { object-fit: contain; background: repeating-conic-gradient(#8882 0 25%, transparent 0 50%) 0 0 / 16px 16px; }
+
+/* add-product: editable tables and photo strips */
+.scroll { overflow-x: auto; }
+table.edit td { padding: 4px 4px; }
+table.edit input { min-width: 90px; }
+.colour { border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; margin-top: 10px; background: var(--panel); }
+.colour .head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.colour .head input[type=text] { width: auto; flex: 1 1 180px; }
+.thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.thumbs figure { margin: 0; width: 92px; font-size: 10px; color: var(--dim); }
+.thumbs img { width: 92px; height: 92px; object-fit: cover; display: block; border: 1px solid var(--line); cursor: zoom-in; }
+.thumbs figure.up img { opacity: .4; }
+.thumbs figure.err figcaption { color: var(--bad); }
+.thumbs button { font-size: 10px; padding: 1px 5px; margin-top: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips label { display: inline-flex; align-items: center; gap: 5px; margin: 0; padding: 4px 9px; border: 1px solid var(--line); border-radius: 14px; font-size: 12px; color: inherit; cursor: pointer; background: var(--panel); }
+.chips label:has(input:checked) { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
+.chips input { width: auto; margin: 0; display: none; }
+
+/* add-product wizard */
+.steps { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 0 0 18px; counter-reset: step; }
+.steps li { counter-increment: step; display: flex; align-items: center; gap: 6px; padding: 5px 11px 5px 6px; border: 1px solid var(--line); border-radius: 16px; font-size: 12px; cursor: pointer; background: var(--panel); color: var(--dim); }
+.steps li::before { content: counter(step); display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--line); color: inherit; font-size: 10px; font-weight: 700; }
+.steps li.done { color: inherit; }
+.steps li.done::before { content: "✓"; background: var(--ok); color: #fff; }
+.steps li.on { border-color: var(--accent); color: inherit; font-weight: 600; }
+.steps li.on::before { background: var(--accent); color: var(--accent-ink); }
+#create .step { display: none; }
+#create .step.on { display: block; }
+.wizard-nav { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 22px; }
+.chips.pick button, #c-feature-picks button { padding: 4px 10px; border-radius: 14px; font-size: 12px; background: var(--panel); }
+.chips.pick button.on, #c-feature-picks button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+input.other { margin-top: 6px; max-width: 260px; }
+.similar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.similar button { display: flex; align-items: center; gap: 8px; max-width: 300px; text-align: left; font-size: 12px; padding: 5px 9px 5px 5px; }
+.similar img { width: 34px; height: 34px; object-fit: cover; border-radius: 3px; flex: none; }
+.similar button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

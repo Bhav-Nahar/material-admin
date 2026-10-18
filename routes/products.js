@@ -10,7 +10,10 @@
  * steps and why the last one is a read.
  */
 
-const { generateProductImages } = require('../lib/productImages/pipeline');
+const { generateProductImages, stageImage } = require('../lib/productImages/pipeline');
+const seo = require('../lib/seoGenerator');
+const { SHOP_DOMAIN, adminGraphql } = require('../lib/shopify');
+const { resolveCategory } = require('../lib/keywordBank');
 const { SCENE_CONFIG, SCENE_METADATA, COMPOSITED_SCENES } = require('../lib/productImages/promptBuilder');
 const { buildTemplates } = require('../lib/productImages/imageComposer');
 const { rectify } = require('../lib/productImages/rectify');
@@ -68,6 +71,58 @@ function sendError(reply, req, err, extra = {}) {
   return reply.code(status || 502).send({ success: false, error: err.message, code: err.code, ...extra });
 }
 
+const SIMILAR = `
+  query similar($q: String!) {
+    products(first: 8, query: $q, sortKey: UPDATED_AT, reverse: true) {
+      nodes {
+        id title handle productType
+        featuredImage { url }
+        metafields(first: 40, namespace: "custom") { nodes { key value } }
+        variants(first: 50) {
+          nodes {
+            price compareAtPrice
+            selectedOptions { name value }
+            metafields(first: 20, namespace: "custom") { nodes { key value } }
+          }
+        }
+      }
+    }
+  }`;
+
+const mfMap = (nodes) => Object.fromEntries((nodes || []).map((m) => [m.key, m.value]));
+
+/** A Shopify product → the Add-product form's fields. See GET /similar. */
+function asTemplate(p) {
+  const mf = mfMap(p.metafields.nodes);
+  const variants = p.variants.nodes.map((v) => ({
+    ...v,
+    mf: mfMap(v.metafields.nodes),
+    size: v.selectedOptions.find((o) => /size/i.test(o.name))?.value,
+  }));
+  const first = variants[0] || { mf: {} };
+  // One row per size, priced from the first variant that has it.
+  const sizes = [...new Map(variants.filter((v) => v.size).map((v) => [v.size, v])).values()].map((v) => ({
+    sizeLabel: v.mf.size_label || v.size,
+    price: Number(v.price) || undefined,
+    compareAtPrice: Number(v.compareAtPrice) || undefined,
+    piecesPerPack: Number(v.mf.pieces_per_pack) || undefined,
+  }));
+  return {
+    id: p.id, title: p.title, handle: p.handle, image: p.featuredImage?.url || null,
+    fields: {
+      category: p.productType || undefined,
+      look: mf.look, finish: mf.finish, material: mf.material,
+      flexibility: mf.flexibility, series: mf.series, pattern: mf.pattern, slipRating: mf.slip_rating,
+      features: seo.asList(mf.features), applications: seo.asList(mf.application),
+      installCaveats: seo.asList(mf.install_caveats),
+      surface: seo.asList(mf.surface), useCases: seo.asList(mf.use_case),
+      careMaintenance: mf.care_maintenance, installationGuide: mf.installation_guide,
+      thicknessMm: Number(first.mf.thickness_mm) || undefined, packUnit: first.mf.pack_unit,
+      sizes,
+    },
+  };
+}
+
 module.exports = async function (fastify) {
   /**
    * POST /create — a spec in, a Shopify product out.
@@ -80,11 +135,100 @@ module.exports = async function (fastify) {
    * derived from the fields (see lib/productCreate.js for why that inversion matters).
    * Pass `title` explicitly only to override.
    */
+  /**
+   * POST /images/stage — one image into Shopify's staging bucket, attached to nothing.
+   * Body: { data: base64 or data: URL, filename?, mimeType? } → { url }
+   *
+   * Called per image as it is dropped on the form, so the create call later carries
+   * only URLs and never meets the body limit however many colours a product has.
+   */
+  fastify.post('/images/stage', async (req, reply) => {
+    const { data, filename = 'image.jpg' } = req.body || {};
+    const m = /^data:(image\/[a-z+.-]+);base64,/i.exec(data || '');
+    const mimeType = m ? m[1] : req.body?.mimeType || 'image/jpeg';
+    const b64 = m ? data.slice(m[0].length) : data;
+    if (!b64 || typeof b64 !== 'string') {
+      return reply.code(400).send({ success: false, error: 'data (base64 image) is required', code: 'no_image' });
+    }
+    if (!/^image\/(jpeg|png|webp)$/.test(mimeType)) {
+      return reply.code(400).send({ success: false, error: `${mimeType} is not a jpeg, png or webp`, code: 'bad_type' });
+    }
+    try {
+      return { success: true, url: await stageImage(b64, String(filename).slice(0, 120), mimeType) };
+    } catch (err) {
+      return sendError(reply, req, err);
+    }
+  });
+
+  /**
+   * POST /describe — a description, installation guide and care text drafted from the
+   * create form's attributes, before the product exists. Writes nothing.
+   */
+  fastify.post('/describe', async (req, reply) => {
+    const b = req.body || {};
+    const categoryId = resolveCategory({ productType: b.category, title: b.title });
+    if (!categoryId) return reply.code(400).send({ success: false, error: 'pick a category first', code: 'bad_category' });
+    try {
+      const copy = await seo.generateCopy({
+        kind: 'product', categoryId, category: b.category, title: b.title,
+        look: b.look, material: b.material, finish: b.finish, thicknessMm: b.thicknessMm,
+        size: (b.sizes || [])[0], applications: b.applications, colours: b.colours,
+        features: b.features, flexibility: b.flexibility, installCaveats: b.installCaveats,
+      });
+      if (!copy.descriptionHtml) {
+        return reply.code(503).send({ success: false, error: 'AI is not configured (GEMINI_API_KEY) — write the description by hand', code: 'no_ai' });
+      }
+      return { success: true, copy };
+    } catch (err) {
+      return sendError(reply, req, err);
+    }
+  });
+
+  /**
+   * GET /similar?q=leather — products to start a new one FROM. Read-only.
+   *
+   * Each match comes back already shaped as Add-product form fields (attributes,
+   * sizes with their prices), so the form can copy them in one go. Colours and photos
+   * are deliberately not copied: a new product is a new colourway or design, and
+   * reusing another product's photos would put the wrong material on its page.
+   */
+  fastify.get('/similar', async (req, reply) => {
+    const q = String(req.query.q || '').trim();
+    if (q.length < 2) return { success: true, products: [] };
+    try {
+      const data = await adminGraphql(SIMILAR, { q: `title:*${q.replace(/["\\]/g, '')}*` });
+      return { success: true, products: data.products.nodes.map(asTemplate) };
+    } catch (err) {
+      return sendError(reply, req, err);
+    }
+  });
+
+  /**
+   * GET /sku-taken?prefix=LAM-LTHR01- — is this product code already used? Read-only.
+   * SKUs are CATEGORY-PRODUCT-SIZE-COLOUR-FINISH, so a reused PRODUCT code would give two
+   * different products the same SKU the moment their size, colour and finish coincide.
+   */
+  fastify.get('/sku-taken', async (req, reply) => {
+    const prefix = String(req.query.prefix || '').toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    if (prefix.length < 4) return { success: true, taken: [] };
+    try {
+      const data = await adminGraphql(
+        `query($q: String!) { productVariants(first: 5, query: $q) { nodes { sku product { title } } } }`,
+        { q: `sku:${prefix}*` },
+      );
+      const taken = data.productVariants.nodes.filter((v) => (v.sku || '').toUpperCase().startsWith(prefix));
+      return { success: true, taken: taken.map((v) => ({ sku: v.sku, product: v.product.title })) };
+    } catch (err) {
+      return sendError(reply, req, err);
+    }
+  });
+
   fastify.post('/create', async (req, reply) => {
     const apply = req.query.apply === '1';
     try {
       const result = await createProduct(req.body || {}, { dryRun: !apply });
-      return { success: true, ...result };
+      const adminUrl = result.product && `https://${SHOP_DOMAIN}/admin/products/${result.product.id.split('/').pop()}`;
+      return { success: true, ...result, adminUrl };
     } catch (err) {
       return sendError(reply, req, err);
     }
@@ -209,7 +353,7 @@ module.exports = async function (fastify) {
    * is the next step, and it should be taken with eyes on real output first.
    */
   fastify.post('/images/templates', async (req, reply) => {
-    const { photo, sizeLabel, thicknessMm, material, size, cols, repeats } = req.body || {};
+    const { photo, sizeLabel, thicknessMm, material, size, cols, repeats, features } = req.body || {};
     if (!photo || typeof photo !== 'string') {
       return reply.code(400).send({ success: false, error: 'photo (base64) is required', code: 'no_photo' });
     }
@@ -222,6 +366,7 @@ module.exports = async function (fastify) {
         ...(size ? { size: Number(size) } : {}),
         ...(cols ? { cols: Number(cols) } : {}),
         ...(repeats ? { repeats: Number(repeats) } : {}),
+        ...(Array.isArray(features) ? { features: features.map(String).slice(0, 4) } : {}),
       });
       return {
         success: true,

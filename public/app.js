@@ -89,7 +89,7 @@ const VOCAB = {
     finish: ['Matte', 'Glossy', 'High Gloss', 'Carving Matte', 'Glue Matte'],
   },
   Laminates: {
-    look: ['Woodgrain', 'Solid colour', 'Fluted', 'Stone-look'],
+    look: ['Woodgrain', 'Solid colour', 'Fluted', 'Stone-look', 'Leather', 'Fabric', 'Marble'],
     material: ['Acrylic', 'ASA', 'PVC', 'PETG', 'WPC Fibre'],
     finish: ['Texture', 'High Gloss', 'Suede', 'Matte', 'Glossy'],
   },
@@ -98,77 +98,634 @@ const VOCAB = {
     material: ['Non-woven', 'PVC', 'Canvas', 'Handmade', 'Soft Feel'],
     finish: [],
   },
+  Stone: {
+    look: ['Marble', 'Granite', 'Quartz', 'Onyx', 'Travertine'],
+    material: ['Natural stone', 'Quartz', 'Sintered stone'],
+    finish: ['Polished', 'Honed', 'Leathered', 'Flamed'],
+  },
+  Panels: {
+    look: ['Fluted', 'Leather', 'Woodgrain', 'Stone-look', 'Marble', 'Fabric', 'Solid colour'],
+    material: ['PVC', 'WPC', 'Charcoal', 'PU', 'MDF', 'Acrylic'],
+    finish: ['Matte', 'Textured', 'Glossy', 'High Gloss', 'Suede'],
+  },
 };
+// "Where to use" choices: the category's rooms from the keyword bank first, then the
+// places a surface goes whatever it is. Ticked, not typed — one spelling per place,
+// so the storefront's filters do not split "TV Unit" from "Tv unit".
+const WHERE = {
+  Tiles: ['Bathroom', 'Kitchen', 'Living room', 'Bedroom', 'Balcony', 'Outdoor'],
+  Laminates: ['Wardrobe', 'Kitchen shutters', 'Wall panelling'],
+  Wallpaper: ['Bedroom', 'Living room', "Children's room"],
+  Panels: ['Living room', 'Bedroom', 'Office', 'Hotel', 'Restaurant'],
+  Stone: ['Kitchen countertop', 'Vanity top', 'Wall cladding', 'Flooring'],
+};
+const WHERE_ANY = ['TV Unit', 'Kitchen', 'Wardrobe', 'Bathroom', 'Ceiling', 'Feature wall', 'Furniture', 'Commercial'];
+const PACK_DEFAULT = { Tiles: 'box', Laminates: 'sheet', Wallpaper: 'roll', Panels: 'piece', Stone: 'slab' };
+// Broad colour groups for "shop by colour". Each has the shade words that imply it, so
+// typing "Olive Green" or "Walnut" ticks the group without anyone choosing it.
+const FAMILIES = {
+  White: /white|ivory|snow|pearl/i, Beige: /beige|cream|sand|ivory|almond|linen/i,
+  Grey: /gr[ae]y|slate|ash|silver|charcoal|stone|cement/i, Black: /black|jet|onyx|ebony|charcoal/i,
+  Brown: /brown|walnut|oak|teak|wenge|chocolate|coffee|mocha|tan|chestnut|maple|honey/i,
+  Green: /green|olive|sage|emerald|mint|moss/i, Blue: /blue|navy|teal|aqua|indigo|denim/i,
+  Red: /red|maroon|wine|burgundy|cherry/i, Pink: /pink|rose|blush/i, Yellow: /yellow|mustard|lemon/i,
+  Orange: /orange|terracotta|rust|copper|peach/i, Gold: /gold|brass|champagne/i, Multicolour: /multi/i,
+};
+
+/** A row of tick-chips. Keeps whatever was ticked that still exists. */
+function chips(id, values, checked = []) {
+  const keep = new Set([...checked, ...picked(id)]);
+  $(id).innerHTML = [...new Set(values)].map((v) =>
+    `<label><input type="checkbox" value="${v}"${keep.has(v) ? ' checked' : ''}>${v}</label>`).join('');
+}
+const picked = (id) => [...$(id).querySelectorAll('input:checked')].map((i) => i.value);
+
 function fillVocab() {
-  const v = VOCAB[$('c-category').value] || {};
+  const cat = $('c-category').value;
+  const v = VOCAB[cat] || {};
   for (const k of ['look', 'material', 'finish']) {
     $('l-' + k).innerHTML = (v[k] || []).map((x) => `<option value="${x}">`).join('');
   }
+  chips('c-where', [...(WHERE[cat] || []), ...WHERE_ANY]);
+  $('c-packUnit').value = PACK_DEFAULT[cat] || 'piece';
+  renderPicks();
+}
+
+/* ── tap-to-pick: Look / Finish / Material, and feature suggestions ── */
+// One value per field: a chip sets the input beside it, the input is the "Other"
+// box, and whichever was last touched wins. Same field ids as before, so nothing
+// downstream (createBody, autosave) needed to change.
+function renderPicks() {
+  const v = VOCAB[$('c-category').value] || {};
+  document.querySelectorAll('.chips.pick').forEach((box) => {
+    const input = $(box.dataset.for);
+    const key = box.dataset.for.replace('c-', '');
+    box.innerHTML = (v[key] || []).map((x) => `<button type="button" data-v="${x}">${x}</button>`).join('');
+    const mark = () => box.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === input.value.trim()));
+    box.onclick = (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      input.value = input.value.trim() === b.dataset.v ? '' : b.dataset.v;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    input.oninput = mark;
+    mark();
+  });
+  markFeatures();
+}
+
+const FEATURE_SUGGESTIONS = [
+  'Water Resistant', 'Termite Proof', 'Scratch Resistant', 'Easy to Install', 'Light Weight',
+  'Fire Retardant', 'UV Resistant', 'Easy to Clean', 'Flexible', 'Eco-friendly', 'Long Lasting', 'Stain Resistant',
+];
+const featureBoxes = () => [...document.querySelectorAll('.c-feature')];
+function markFeatures() {
+  const have = new Set(featureBoxes().map((i) => i.value.trim().toLowerCase()));
+  $('c-feature-picks').innerHTML = FEATURE_SUGGESTIONS.map((f) =>
+    `<button type="button" data-v="${f}" class="${have.has(f.toLowerCase()) ? 'on' : ''}">${f}</button>`).join('');
+}
+$('c-feature-picks').onclick = (e) => {
+  const f = e.target.closest('button')?.dataset.v;
+  if (!f) return;
+  const boxes = featureBoxes();
+  const existing = boxes.find((i) => i.value.trim().toLowerCase() === f.toLowerCase());
+  const empty = boxes.find((i) => !i.value.trim());
+  if (existing) existing.value = '';
+  else if (empty) empty.value = f;
+  else return stepMsg('bad', 'Four features already — clear one to add another');
+  empty?.dispatchEvent(new Event('input', { bubbles: true }));
+  existing?.dispatchEvent(new Event('input', { bubbles: true }));
+};
+featureBoxes().forEach((i) => i.addEventListener('input', markFeatures));
+chips('c-family', Object.keys(FAMILIES));
+function autoFamily() {
+  const names = colours.map(colourName).join(' ');
+  chips('c-family', Object.keys(FAMILIES), Object.keys(FAMILIES).filter((f) => FAMILIES[f].test(names)));
 }
 $('c-category').onchange = fillVocab;
 fillVocab();
 
 /* ── create product ───────────────────────────────────────────────── */
-function createBody() {
-  return {
-    category: $('c-category').value,
-    sku: str('c-sku'), series: str('c-series'), colourName: str('c-colourName'),
-    colourFamily: list('c-colourFamily'),
-    look: str('c-look'), material: str('c-material'), finish: str('c-finish'),
-    surface: list('c-surface'), pattern: str('c-pattern'), useCases: list('c-useCases'),
-    slipRating: str('c-slipRating'), applications: list('c-applications'),
-    designVariants: num('c-designVariants'),
-    price: num('c-price'), priceUnit: str('c-priceUnit'), sizeLabel: str('c-sizeLabel'),
-    thicknessMm: num('c-thicknessMm'), packUnit: str('c-packUnit'),
-    piecesPerPack: num('c-piecesPerPack'), coveragePerPack: num('c-coveragePerPack'),
-    samplePrice: num('c-samplePrice'),
-    installCaveats: lines('c-installCaveats'),
-    title: str('c-title'),
-    status: $('c-active').checked ? 'ACTIVE' : 'DRAFT',
+// Photos are staged in Shopify the moment they are chosen, so Create only sends
+// URLs. Each image: { src (data URL, for the thumb and the shots), url (staged),
+// role, status: 'up' | 'ok' | 'err', shot (true when generated here) }.
+const colours = [];
+let colourSeq = 0;
+
+const readDataUrl = (file) => new Promise((ok, fail) => {
+  const r = new FileReader();
+  r.onload = () => ok(r.result);
+  r.onerror = () => fail(r.error);
+  r.readAsDataURL(file);
+});
+
+async function stage(c, im) {
+  im.status = 'up';
+  renderThumbs(c);
+  const r = await api('/api/products/images/stage', { method: 'POST', body: { data: im.src, filename: im.name || 'image.jpg' } });
+  Object.assign(im, r.ok ? { url: r.json.url, status: 'ok' } : { status: 'err', err: r.json?.error || `HTTP ${r.status}` });
+  renderThumbs(c);
+}
+
+function renderThumbs(c) {
+  c.el.querySelector('.thumbs').innerHTML = c.images.map((im, i) => `
+    <figure class="${im.status}">
+      <img src="${im.src}" data-i="${i}" alt="">
+      <figcaption>${i === 0 ? '<b>main</b> · ' : ''}${im.status === 'up' ? 'uploading…' : im.status === 'err' ? im.err : im.role || (im.extra ? 'extra' : 'photo')}</figcaption>
+      ${i && !im.extra && !im.shot ? `<button data-main="${i}" title="make main image">★</button>` : ''}<button data-del="${i}" title="remove">✕</button>
+    </figure>`).join('');
+}
+
+/**
+ * A colour's two pickers and its thumbnail strip. Order within a colour is fixed:
+ *   photos (the first is the main image AND the swatch the shots are made from)
+ *   → generated shots → extras (room / installation shots: shown, never the swatch)
+ */
+const firstOf = (c, test) => { const i = c.images.findIndex(test); return i < 0 ? c.images.length : i; };
+
+function wirePhotos(c) {
+  c.el.querySelectorAll('input[type=file]').forEach((input) => {
+    const isExtra = input.dataset.kind === 'extra';
+    input.onchange = async (e) => {
+      const files = [...e.target.files];
+      e.target.value = '';
+      const added = await Promise.all(files.map(async (f) => ({ src: await readDataUrl(f), name: f.name, extra: isExtra })));
+      if (isExtra) c.images.push(...added);
+      else c.images.splice(firstOf(c, (im) => im.shot || im.extra), 0, ...added);
+      await Promise.all(added.map((im) => stage(c, im)));
+      if (!isExtra) try { await makeShots(c); } catch (err) { say('bad', err.message); }
+    };
+  });
+  c.el.querySelector('.thumbs').onclick = (e) => {
+    const { del, main, i } = e.target.dataset;
+    if (del != null) c.images.splice(Number(del), 1);
+    else if (main != null) c.images.unshift(...c.images.splice(Number(main), 1));
+    else if (i != null) return zoom(c.images[i].src, c.images[i].role || 'photo');
+    else return;
+    renderThumbs(c);
   };
 }
 
-function renderDerived(el, d, product) {
+function addColour() {
+  const c = { id: ++colourSeq, images: [], el: document.createElement('div') };
+  c.el.className = 'colour';
+  c.el.innerHTML = `
+    <div class="head">
+      <input type="text" class="c-colour-name" placeholder="Colour name — e.g. Walnut">
+      <label style="margin:0">Photos <input type="file" accept="image/jpeg,image/png,image/webp" multiple style="width:auto"></label>
+      <label style="margin:0">+ Extra images <input type="file" data-kind="extra" accept="image/jpeg,image/png,image/webp" multiple style="width:auto"></label>
+      <button class="rm">Remove colour</button>
+    </div>
+    <div class="thumbs"></div>`;
+  wirePhotos(c);
+  c.el.querySelector('.c-colour-name').onchange = autoFamily;
+  c.el.querySelector('.rm').onclick = () => {
+    colours.splice(colours.indexOf(c), 1);
+    c.el.remove();
+  };
+  colours.push(c);
+  $('c-colours').append(c.el);
+}
+
+/**
+ * Sq ft one pack covers, in the browser, so ₹/sq ft and the pack price can fill each
+ * other as you type. The same rule productCreate applies on the server: a typed
+ * coverage wins, else pieces × the size (no unit and small numbers = feet, "8X4").
+ */
+const UNIT_MM = { mm: 1, cm: 10, m: 1000, in: 25.4, inch: 25.4, ft: 304.8, feet: 304.8 };
+function packSqFt(tr) {
+  const typed = nval(tr, '.s-cover');
+  if (typed > 0) return typed;
+  const m = val(tr, '.s-size').match(/(\d+(?:\.\d+)?)\s*(mm|cm|m|inch|in|feet|ft)?\s*[x×X*]\s*(\d+(?:\.\d+)?)\s*(mm|cm|m|inch|in|feet|ft)?/i);
+  if (!m) return 0;
+  const [w, h] = [Number(m[1]), Number(m[3])];
+  const k = UNIT_MM[(m[4] || m[2] || (Math.max(w, h) <= 20 ? 'ft' : 'mm')).toLowerCase()] || 1;
+  return Math.round((nval(tr, '.s-pieces') || 1) * w * k * h * k / 92903.04 * 10) / 10;
+}
+
+function addSize() {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input class="s-size" placeholder="8X4 or 2440 x 1220 mm"></td>
+    <td><input class="s-rate" type="number" step="0.01" placeholder="47"></td>
+    <td><input class="s-price" type="number" placeholder="1500"></td>
+    <td><input class="s-mrp" type="number" placeholder="2100"></td>
+    <td><input class="s-pieces" type="number" placeholder="1"></td>
+    <td><input class="s-cover" type="number" step="0.01" placeholder="auto"></td>
+    <td><button title="remove">✕</button></td>`;
+  // Whichever price was typed last drives the other. Pack prices are whole rupees,
+  // as the server rounds them; the rate shown is that rounded price ÷ coverage.
+  let lead = 'price';
+  const sync = () => {
+    const cover = packSqFt(tr);
+    tr.querySelector('.s-cover').placeholder = cover ? `${cover} (auto)` : 'auto';
+    if (!cover) return;
+    if (lead === 'rate' && nval(tr, '.s-rate') > 0) {
+      tr.querySelector('.s-price').value = Math.round(nval(tr, '.s-rate') * cover);
+    } else if (lead === 'price' && nval(tr, '.s-price') > 0) {
+      tr.querySelector('.s-rate').value = (nval(tr, '.s-price') / cover).toFixed(2);
+    }
+  };
+  tr.querySelector('.s-rate').oninput = () => { lead = 'rate'; sync(); };
+  tr.querySelector('.s-price').oninput = () => { lead = 'price'; sync(); };
+  for (const cls of ['.s-size', '.s-pieces', '.s-cover']) tr.querySelector(cls).oninput = sync;
+  tr.querySelector('button').onclick = () => tr.remove();
+  $('c-sizes').querySelector('tbody').append(tr);
+}
+
+$('c-add-size').onclick = addSize;
+$('c-add-colour').onclick = addColour;
+addSize();
+addColour();
+
+const val = (el, sel) => el.querySelector(sel).value.trim();
+const nval = (el, sel) => (val(el, sel) === '' ? undefined : Number(val(el, sel)));
+const features = () => [...document.querySelectorAll('.c-feature')].map((i) => i.value.trim()).filter(Boolean);
+const colourName = (c) => c.el.querySelector('.c-colour-name').value.trim();
+const sizeRows = () => [...$('c-sizes').querySelectorAll('tbody tr')].filter((tr) => val(tr, '.s-size') || val(tr, '.s-price'));
+/* ── SKU: CATEGORY-PRODUCT-SIZE-COLOUR-FINISH ───────────────────────── */
+// e.g. LAM-LTHR01-8X4-OLVGRN-MAT. Short codes: readable on a label or an invoice.
+const CAT_CODE = { Panels: 'PNL', Laminates: 'LAM', Tiles: 'TIL', Wallpaper: 'WAL', Stone: 'STN' };
+const FINISH_CODE = {
+  matte: 'MAT', matt: 'MAT', glossy: 'GLS', gloss: 'GLS', 'high gloss': 'HGL', textured: 'TEX', texture: 'TEX',
+  suede: 'SUD', satin: 'SAT', polished: 'POL', honed: 'HON', leathered: 'LTH', velvet: 'VLV', metallic: 'MTL',
+  'carving matte': 'CMT', 'glue matte': 'GMT', flamed: 'FLM',
+};
+const letters = (s) => String(s || '').toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').trim();
+// First letter + the consonants after it: OLIVE -> OLV, CARRARA -> CRR, CHARCOAL -> CHRCL.
+const squeeze = (w, n) => (w[0] + w.slice(1).replace(/[AEIOU]/g, '')).slice(0, n);
+function colourCode(name) {
+  const words = letters(name).split(/\s+/).filter(Boolean);
+  if (words.length === 1) return words[0].length <= 6 ? words[0] : squeeze(words[0], 6);
+  return words.map((w) => squeeze(w, 3)).join('').slice(0, 9);
+}
+const finishCode = (f) => FINISH_CODE[String(f || '').trim().toLowerCase()] || (f ? squeeze(letters(f).replace(/\s+/g, ''), 3) : '');
+// "2440 x 1220 mm" -> 2440X1220, "8 ft x 4 ft" -> 8X4.
+const sizeCode = (s) => String(s || '').toUpperCase().replace(/×/g, 'X').replace(/\b(MM|CM|M|FT|FEET|IN|INCH)\b/g, '').replace(/[^0-9X.]/g, '');
+function skuFor(size, colour) {
+  return [CAT_CODE[$('c-category').value], letters(str('c-sku')).replace(/\s+/g, ''), sizeCode(size), colour && colourCode(colour), finishCode(str('c-finish'))]
+    .filter(Boolean).join('-');
+}
+function showSkuExample() {
+  const size = sizeRows().map((tr) => val(tr, '.s-size'))[0] || '8X4';
+  const colour = colours.map(colourName).find(Boolean) || 'Olive Green';
+  $('c-sku-eg').textContent = str('c-sku') ? skuFor(size, colour) : `${CAT_CODE[$('c-category').value]}-YOURCODE-…`;
+}
+$('create').addEventListener('input', showSkuExample);
+$('create').addEventListener('change', showSkuExample);
+
+function createBody() {
+  const sizes = sizeRows().map((tr, i) => ({
+    i, sizeLabel: val(tr, '.s-size') || undefined, price: nval(tr, '.s-price'),
+    compareAtPrice: nval(tr, '.s-mrp'), piecesPerPack: nval(tr, '.s-pieces'), coveragePerPack: nval(tr, '.s-cover'),
+  }));
+  const named = colours.filter(colourName);
+  const variants = (sizes.length ? sizes : [{ i: 0 }]).flatMap((s) =>
+    (named.length ? named : [null]).map((c) => ({
+      ...s, i: undefined,
+      colour: c ? colourName(c) : undefined,
+      sku: str('c-sku') ? skuFor(s.sizeLabel, c && colourName(c)) : undefined,
+      quantity: num('c-quantity'),
+    })));
+  // Two colours can shorten to the same code ("Dark Green" / "Dark Grain"): number the
+  // repeats rather than send Shopify two variants with one SKU.
+  const seen = {};
+  for (const v of variants) {
+    if (!v.sku) continue;
+    seen[v.sku] = (seen[v.sku] || 0) + 1;
+    if (seen[v.sku] > 1) v.sku += `-${seen[v.sku]}`;
+  }
+  // A blank-named colour is the single-colour case: its photos belong to everyone.
+  const images = [
+    ...colours.flatMap((c) => c.images.filter((im) => im.url)
+      .map((im, j) => ({
+        url: im.url,
+        role: im.role || (j ? `photo ${j + 1}` : 'main photo'),
+        colour: named.length ? colourName(c) || undefined : undefined,
+      }))),
+  ];
+  return {
+    category: $('c-category').value, title: str('c-title'),
+    finish: str('c-finish'), look: str('c-look'), material: str('c-material'),
+    thicknessMm: num('c-thicknessMm'), applications: [...picked('c-where'), ...list('c-where-other')],
+    flexibility: str('c-flexibility'), colourFamily: picked('c-family'),
+    features: features(), installCaveats: lines('c-installCaveats'),
+    series: str('c-series'), surface: list('c-surface'), pattern: str('c-pattern'),
+    useCases: list('c-useCases'), slipRating: str('c-slipRating'),
+    designVariants: num('c-designVariants'), samplePrice: num('c-samplePrice'),
+    packUnit: str('c-packUnit'), // price_unit: always the category's — see applyPriceUnit
+    descriptionHtml: str('c-description'),
+    installationGuide: str('c-installationGuide'), careMaintenance: str('c-careMaintenance'),
+    variants, images,
+  };
+}
+
+/**
+ * Images made from a colour's main photo, by the flat templates — no model call, a
+ * second or two each. Made as soon as photos are added, and remade on Preview only
+ * when the main photo, the chosen kinds or the attributes drawn on them have changed.
+ */
+const SHOT_KINDS = {
+  studio: 'studio shot', thickness: 'thickness detail', features: 'features',
+  isometric: 'size & dimensions', grout_grid: 'laid pattern', repeat_preview: 'pattern repeat',
+};
+chips('c-shot-kinds', Object.keys(SHOT_KINDS), ['studio', 'thickness', 'features']);
+$('c-shot-kinds').querySelectorAll('label').forEach((l) => {
+  l.lastChild.textContent = SHOT_KINDS[l.querySelector('input').value];
+});
+
+async function makeShots(c) {
+  const photo = c.images.find((im) => !im.shot && !im.extra);
+  const kinds = picked('c-shot-kinds');
+  const sizeLabel = sizeRows().map((tr) => val(tr, '.s-size'))[0];
+  const key = photo && JSON.stringify([photo.src.length, photo.src.slice(-64), kinds, features(), num('c-thicknessMm'), sizeLabel]);
+  if (c.shotKey === key) return;
+  c.images = c.images.filter((im) => !im.shot);
+  c.shotKey = key;
+  renderThumbs(c);
+  if (!photo || !kinds.length) return;
+  say('', `making images for ${colourName(c) || 'your photos'}…`);
+  const r = await api('/api/products/images/templates', {
+    method: 'POST',
+    body: { photo: photo.src.split(',')[1], size: 2048, features: features(), sizeLabel, thicknessMm: num('c-thicknessMm') },
+  });
+  if (!r.ok) throw new Error(`images for ${colourName(c) || 'photos'}: ${r.json?.error || r.status}`);
+  const shots = kinds.filter((id) => r.json.images[id])
+    .map((id) => ({ src: `data:image/jpeg;base64,${r.json.images[id]}`, role: SHOT_KINDS[id], shot: true, name: `${id}.jpg` }));
+  c.images.splice(firstOf(c, (im) => im.extra), 0, ...shots);
+  say('', '');
+  await Promise.all(shots.map((im) => stage(c, im)));
+}
+
+function renderDerived(el, d, extra = []) {
   const rows = [
-    ['Derived title', d.title],
+    ...extra,
+    ['Title', d.title],
     ['Meta title', `${d.seoTitle} <span class="hint">${d.seoTitle.length} chars</span>`],
     ['Meta description', `${d.seoDescription} <span class="hint">${d.seoDescription.length} chars</span>`],
-    ['Keywords', (d.keywords || []).slice(0, 10).join(' · ')],
   ];
-  if (product) {
-    rows.unshift(['Created', `<span class="pill ok">${product.status}</span> <code>${product.handle}</code>`]);
-  }
-  el.innerHTML = `<dl class="derived">${rows
-    .filter(([, v]) => v)
-    .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`)
-    .join('')}</dl>`;
+  el.innerHTML = `<dl class="derived">${rows.filter(([, v]) => v).map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`;
 }
 
 function renderWarnings(el, warnings) {
   if (!warnings || !warnings.length) return;
-  el.insertAdjacentHTML('beforeend',
-    `<div class="note warn"><strong>Check these:</strong><br>${warnings.join('<br>')}</div>`);
+  el.insertAdjacentHTML('beforeend', `<div class="note warn"><strong>Check these:</strong><br>${warnings.join('<br>')}</div>`);
 }
 
+// Status goes to the Review line AND the wizard's own line, so a message raised while
+// on another step ("making images…") is seen where the person is.
+const say = (cls, text) => {
+  for (const id of ['c-msg', 'c-step-msg']) { $(id).className = 'msg ' + cls; $(id).textContent = text; }
+};
+
+$('c-describe').onclick = () => busy($('c-describe'), async () => {
+  $('c-describe-msg').className = 'msg'; $('c-describe-msg').textContent = 'writing…';
+  const b = createBody();
+  const r = await api('/api/products/describe', {
+    method: 'POST',
+    body: { ...b, sizes: b.variants.map((v) => v.sizeLabel).filter(Boolean), colours: [...new Set(b.variants.map((v) => v.colour).filter(Boolean))] },
+  });
+  if (!r.ok) { $('c-describe-msg').className = 'msg bad'; $('c-describe-msg').textContent = r.json?.error || `HTTP ${r.status}`; return; }
+  $('c-description').value = r.json.copy.descriptionHtml;
+  $('c-installationGuide').value = r.json.copy.installationGuide || '';
+  $('c-careMaintenance').value = r.json.copy.careMaintenance || '';
+  $('c-describe-msg').className = 'msg ok'; $('c-describe-msg').textContent = 'drafted — edit freely; installation and care text were written too';
+});
+
 $('c-preview').onclick = () => busy($('c-preview'), async () => {
-  const r = await api('/api/products/create', { method: 'POST', body: createBody() });
-  if (!show('c-msg', 'c-out', r)) { $('c-apply').disabled = true; return; }
-  renderDerived($('c-derived'), r.json.derived);
+  $('c-apply').disabled = true;
+  try {
+    say('', 'building shots…');
+    for (const c of colours) await makeShots(c);
+  } catch (err) { return say('bad', err.message); }
+  const all = colours.flatMap((c) => c.images);
+  if (all.some((im) => im.status === 'up')) return say('bad', 'photos are still uploading — try again in a moment');
+  if (all.some((im) => im.status === 'err')) return say('bad', 'some photos failed to upload — remove them (✕) or re-add');
+  if (!all.length) return say('bad', 'add at least one photo');
+
+  const body = createBody();
+  const r = await api('/api/products/create', { method: 'POST', body });
+  if (!show('c-msg', 'c-out', r)) return;
+  $('c-out').hidden = true;
+  const vs = r.json.productSet.variants.length;
+  // Per variant: what Shopify will get, including the coverage worked out from the size.
+  const variantRows = r.json.productSet.variants.map((v) => {
+    const cover = Number(v.metafields.find((m) => m.key === 'coverage_per_pack')?.value) || 0;
+    return `<tr><td>${(v.optionValues || []).map((o) => o.name).join(' / ') || 'Default'}</td><td>${v.sku || ''}</td>
+      <td class="num">₹${v.price}</td><td class="num">${cover ? `${cover} sq ft` : '—'}</td>
+      <td class="num">${cover ? `₹${(v.price / cover).toFixed(1)}` : '—'}</td></tr>`;
+  }).join('');
+  renderDerived($('c-derived'), r.json.derived, [
+    ['Will create', `${vs} variant${vs > 1 ? 's' : ''} · ${body.images.length} images, every one with alt text
+      <table><tr><th>Variant</th><th>SKU</th><th>Price</th><th>Covers</th><th>₹ / sq ft</th></tr>${variantRows}</table>`],
+    ['Alt text, e.g.', r.json.productSet.files?.[0]?.alt],
+  ]);
   renderWarnings($('c-derived'), r.json.warnings);
   $('c-apply').disabled = false;
-  $('c-msg').textContent = 'previewed — nothing written';
+  say('ok', 'previewed — nothing written yet');
 });
 
 $('c-apply').onclick = () => busy($('c-apply'), async () => {
+  say('', 'creating…');
   const r = await api('/api/products/create?apply=1', { method: 'POST', body: createBody() });
   if (!show('c-msg', 'c-out', r)) return;
-  renderDerived($('c-derived'), r.json.derived, r.json.product);
+  $('c-out').hidden = true;
+  const p = r.json.product;
+  renderDerived($('c-derived'), r.json.derived, [
+    ['Created', `<span class="pill warn">${p.status}</span> <code>${p.handle}</code> ·
+      <a href="${r.json.adminUrl}" target="_blank">open in Shopify</a>
+      ${p.onlineStorePreviewUrl ? `· <a href="${p.onlineStorePreviewUrl}" target="_blank">preview on store</a>` : ''}`],
+    ['Publish', `<button id="c-publish" class="primary">Publish to Online Store</button> <span id="c-pub-msg" class="msg"></span>`],
+  ]);
   renderWarnings($('c-derived'), r.json.warnings);
+  $('c-publish').onclick = () => busy($('c-publish'), async () => {
+    const pr = await api(`/api/products/${p.id.split('/').pop()}/publish`, { method: 'POST', body: {} });
+    $('c-pub-msg').className = 'msg ' + (pr.ok ? 'ok' : 'bad');
+    $('c-pub-msg').innerHTML = pr.ok
+      ? 'live ✓'
+      : `${pr.json?.error || pr.status}${(pr.json?.gates || []).map((g) => `<br>· ${g.message || g.key || JSON.stringify(g)}`).join('')}`;
+  });
   $('c-apply').disabled = true;
-  $('c-msg').textContent = 'created';
-  $('s-handle').value = r.json.product.handle;
-  $('i-product').value = r.json.product.id.split('/').pop();
+  say('ok', 'created as draft');
+  $('s-handle').value = p.handle;
+  $('i-product').value = p.id.split('/').pop();
 });
+
+/* ── wizard: one step at a time ──────────────────────────────────── */
+// The six .step blocks in index.html; the bar is built from their titles. Next checks
+// only what that step needs, in plain words; the bar lets anyone jump anywhere, and
+// Create still runs every server-side check whatever route was taken to it.
+const steps = [...document.querySelectorAll('#create .step')];
+let stepAt = 0;
+const stepMsg = (cls, text) => { $('c-step-msg').className = 'msg ' + cls; $('c-step-msg').textContent = text; };
+
+async function stepProblem(i) {
+  if (i === 0) {
+    if (!str('c-sku')) return 'Add a product code — it makes every SKU unique (e.g. LTHR01)';
+    const prefix = `${CAT_CODE[$('c-category').value]}-${letters(str('c-sku')).replace(/\s+/g, '')}-`;
+    const r = await api(`/api/products/sku-taken?prefix=${encodeURIComponent(prefix)}`);
+    const t = r.json?.taken?.[0];
+    if (t) return `${prefix}… is already used by “${t.product.slice(0, 50)}” — pick another product code`;
+  }
+  if (i === 3) {
+    const rows = sizeRows();
+    if (!rows.length) return 'Add at least one size with its price';
+    const unpriced = rows.find((tr) => !(nval(tr, '.s-price') > 0));
+    if (unpriced) return `Add a price for ${val(unpriced, '.s-size') || 'every size'}`;
+  }
+  if (i === 4) {
+    const imgs = colours.flatMap((c) => c.images);
+    if (colours.length > 1 && colours.some((c) => !colourName(c))) return 'Name every colour — or remove the empty one';
+    if (!imgs.length) return 'Add at least one photo';
+    if (imgs.some((im) => im.status === 'up')) return 'Photos are still uploading — one moment';
+    if (imgs.some((im) => im.status === 'err')) return 'A photo failed to upload — remove it (✕) and add it again';
+  }
+  return null;
+}
+
+function go(i) {
+  stepAt = Math.max(0, Math.min(steps.length - 1, i));
+  steps.forEach((el, n) => el.classList.toggle('on', n === stepAt));
+  $('c-steps').innerHTML = steps.map((el, n) =>
+    `<li data-n="${n}" class="${n === stepAt ? 'on' : n < stepAt ? 'done' : ''}">${el.dataset.title}</li>`).join('');
+  $('c-back').disabled = stepAt === 0;
+  $('c-next').hidden = stepAt === steps.length - 1;
+  stepMsg('', '');
+  // Arriving at Review builds the preview — the step exists to show what will be created.
+  if (stepAt === steps.length - 1) $('c-preview').click();
+  saveDraft();
+}
+$('c-steps').onclick = (e) => { const n = e.target.closest('li')?.dataset.n; if (n != null) go(Number(n)); };
+$('c-back').onclick = () => go(stepAt - 1);
+$('c-next').onclick = () => busy($('c-next'), async () => {
+  const problem = await stepProblem(stepAt);
+  if (problem) return stepMsg('bad', problem);
+  go(stepAt + 1);
+});
+
+/* ── start from a similar product ───────────────────────────────────── */
+let similarTimer;
+let similarFound = [];
+$('c-similar').oninput = () => {
+  clearTimeout(similarTimer);
+  similarTimer = setTimeout(async () => {
+    const q = $('c-similar').value.trim();
+    if (q.length < 2) { $('c-similar-list').innerHTML = ''; return; }
+    const r = await api(`/api/products/similar?q=${encodeURIComponent(q)}`);
+    similarFound = r.json?.products || [];
+    $('c-similar-list').innerHTML = similarFound.length
+      ? similarFound.map((p, i) => `<button type="button" data-i="${i}" title="${p.title.replace(/"/g, '&quot;')}">
+          ${p.image ? `<img src="${p.image}&width=80" alt="">` : ''}<span>${p.title}</span></button>`).join('')
+      : '<span class="hint">No match — try another word</span>';
+  }, 300);
+};
+$('c-similar-list').onclick = (e) => {
+  const p = similarFound[e.target.closest('button')?.dataset.i];
+  if (!p) return;
+  applyFields(p.fields);
+  $('c-similar-list').innerHTML = `<span class="msg ok" style="margin:0">Copied from “${p.title.slice(0, 60)}” — check each step, then add your colours &amp; photos.</span>`;
+  saveDraft();
+};
+
+/** Fill the form from a field bag — a similar product's, or a saved draft's. */
+function applyFields(f) {
+  const set = (id, v) => { if (v != null && $(id)) $(id).value = Array.isArray(v) ? v.join('\n') : v; };
+  if (f.category && [...$('c-category').options].some((o) => o.value === f.category)) {
+    $('c-category').value = f.category;
+    fillVocab();
+  }
+  ['look', 'finish', 'material', 'thicknessMm', 'flexibility', 'series', 'pattern', 'slipRating',
+    'installCaveats', 'careMaintenance', 'installationGuide', 'packUnit'].forEach((k) => set('c-' + k, f[k]));
+  set('c-surface', (f.surface || []).join(', '));
+  set('c-useCases', (f.useCases || []).join(', '));
+  featureBoxes().forEach((box, i) => { box.value = (f.features || [])[i] || ''; });
+  const known = [...$('c-where').querySelectorAll('input')].map((i) => i.value);
+  $('c-where').querySelectorAll('input').forEach((i) => { i.checked = (f.applications || []).includes(i.value); });
+  set('c-where-other', (f.applications || []).filter((a) => !known.includes(a)).join(', '));
+  if (f.sizes?.length) {
+    $('c-sizes').querySelector('tbody').innerHTML = '';
+    for (const z of f.sizes) {
+      addSize();
+      const tr = [...$('c-sizes').querySelectorAll('tbody tr')].pop();
+      tr.querySelector('.s-size').value = z.sizeLabel || '';
+      tr.querySelector('.s-mrp').value = z.compareAtPrice || '';
+      tr.querySelector('.s-pieces').value = z.piecesPerPack || '';
+      tr.querySelector('.s-price').value = z.price || '';
+      tr.querySelector('.s-price').dispatchEvent(new Event('input')); // fills ₹/sq ft
+    }
+  }
+  renderPicks();
+}
+
+/* ── autosave ───────────────────────────────────────────────────────── */
+// Typed fields only, in this browser. Photos are not kept: they are megabytes each,
+// and the staged uploads they point at expire anyway.
+const DRAFT_KEY = 'material-admin:add-product-draft';
+let saveTimer;
+function saveDraft() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    const fields = {};
+    document.querySelectorAll('#create [id^="c-"]').forEach((el) => {
+      if (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && el.type !== 'file' && el.id !== 'c-similar') fields[el.id] = el.value;
+    });
+    const draft = {
+      step: stepAt, fields,
+      features: featureBoxes().map((i) => i.value),
+      where: picked('c-where'), family: picked('c-family'), shots: picked('c-shot-kinds'),
+      sizes: [...$('c-sizes').querySelectorAll('tbody tr')].map((tr) =>
+        ['.s-size', '.s-rate', '.s-price', '.s-mrp', '.s-pieces', '.s-cover'].map((c) => tr.querySelector(c).value)),
+      colours: colours.map(colourName),
+    };
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch { return; }
+    $('c-saved').textContent = 'Draft saved · photos aren’t kept';
+  }, 400);
+}
+$('create').addEventListener('input', saveDraft);
+$('create').addEventListener('change', saveDraft);
+
+function restoreDraft() {
+  let d;
+  try { d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch { d = null; }
+  if (!d) return null;
+  if (d.fields['c-category']) { $('c-category').value = d.fields['c-category']; fillVocab(); }
+  for (const [id, v] of Object.entries(d.fields)) if ($(id) && id !== 'c-category') $(id).value = v;
+  featureBoxes().forEach((box, i) => { box.value = d.features?.[i] || ''; });
+  for (const [id, vals] of [['c-where', d.where], ['c-family', d.family], ['c-shot-kinds', d.shots]]) {
+    $(id).querySelectorAll('input').forEach((i) => { i.checked = (vals || []).includes(i.value); });
+  }
+  if (d.sizes?.length) {
+    $('c-sizes').querySelector('tbody').innerHTML = '';
+    for (const row of d.sizes) {
+      addSize();
+      const tr = [...$('c-sizes').querySelectorAll('tbody tr')].pop();
+      ['.s-size', '.s-rate', '.s-price', '.s-mrp', '.s-pieces', '.s-cover'].forEach((c, i) => { tr.querySelector(c).value = row[i] || ''; });
+    }
+  }
+  while (colours.length < (d.colours?.length || 0)) addColour();
+  (d.colours || []).forEach((name, i) => { colours[i].el.querySelector('.c-colour-name').value = name; });
+  renderPicks();
+  // Photos are not in the draft, so never resume past the step that takes them.
+  stepAt = Math.min(d.step || 0, 4);
+  return 'Draft restored — add the photos again';
+}
+
+$('c-reset').onclick = () => {
+  const b = $('c-reset');
+  if (b.dataset.armed) {
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* nothing to clear */ }
+    location.reload();
+    return;
+  }
+  b.dataset.armed = '1';
+  b.textContent = 'Sure? Click again';
+  setTimeout(() => { delete b.dataset.armed; b.textContent = 'Start over'; }, 3000);
+};
+
+const restored = restoreDraft();
+go(stepAt);
+if (restored) stepMsg('ok', restored);
+showSkuExample();
 
 /* ── SEO audit ────────────────────────────────────────────────────── */
 const band = (s) => (s >= 80 ? 'ok' : s >= 50 ? 'warn' : 'bad');
@@ -276,7 +833,10 @@ const TPL_LABELS = {
   grout_grid: 'Laid floor — with grout',
   repeat_preview: 'Pattern repeat — seams shown',
   scale_reference: 'Scale bar overlay',
+  features: 'Features — zoom + callouts',
 };
+
+$('t-feat-on').onchange = () => { $('t-feat').hidden = !$('t-feat-on').checked; };
 
 $('t-run').onclick = () => busy($('t-run'), async () => {
   const photo = await swatchB64('t-file');
@@ -298,6 +858,9 @@ $('t-run').onclick = () => busy($('t-run'), async () => {
       size: num('t-outsize'),
       cols: Number($('t-cols').value),
       repeats: Number($('t-cols').value),
+      features: $('t-feat-on').checked
+        ? [...document.querySelectorAll('.t-feat-in')].map((i) => i.value.trim()).filter(Boolean)
+        : [],
     },
   });
   if (!show('t-msg', 't-out', r)) return;
@@ -710,3 +1273,77 @@ api('/routes.json').then(({ json }) => {
       <td class="hint">${r.secret ? 'x-cron-secret' : r.method !== 'GET' ? 'body' : ''}</td>
     </tr>`).join('')}</table>`;
 });
+
+/* ── PDF images ───────────────────────────────────────────────────── */
+$('pi-run').onclick = () => busy($('pi-run'), async () => {
+  const file = $('pi-file').files[0];
+  $('pi-zip').hidden = true;
+  $('pi-out').innerHTML = '';
+  if (!file) { $('pi-msg').className = 'msg bad'; $('pi-msg').textContent = 'pick a PDF'; return; }
+  $('pi-msg').className = 'msg';
+  $('pi-msg').textContent = `extracting from ${file.name}…`;
+
+  // The PDF itself as the body, not base64 JSON — the route's parser takes raw bytes.
+  const res = await fetch(`/api/pdf/images?name=${encodeURIComponent(file.name)}`, { method: 'POST', headers: { 'content-type': 'application/pdf' }, body: file });
+  let json = null;
+  try { json = await res.json(); } catch { /* non-JSON error page */ }
+  if (!show('pi-msg', null, { ok: res.ok, status: res.status, json })) return;
+
+  const base = `/api/pdf/images/${json.job}/`;
+  const mb = (b) => (b < 1048576 ? Math.max(1, Math.round(b / 1024)) + ' KB' : (b / 1048576).toFixed(1) + ' MB');
+  const card = (im) => `
+    <figure data-file="${im.file}"${im.decor ? ' class="decor"' : ''}>
+      <img src="${base}${im.file}?thumb=1" data-full="${base}${im.file}" alt="${im.file}" loading="lazy" title="click to view full quality">
+      <figcaption>
+        <span>${im.kind === 'swatch' ? `swatch · <code>${im.colour}</code>` : `${im.width}×${im.height}${im.transparent ? ' · transparent' : ''}`}
+          · ${mb(im.bytes)}${im.decor ? ` · <em>${im.decor}</em>` : ''}</span>
+        <a class="dl" href="${base}${im.file}?dl=1">download</a>
+      </figcaption>
+    </figure>`;
+
+  // Every page, empty ones included: the page render beside its items, with a box on
+  // everything that was extracted. Something on the page without a box was missed.
+  const byPage = Map.groupBy(json.images, (im) => im.page);
+  const decorFile = new Set(json.images.filter((i) => i.decor).map((i) => i.file));
+  const pct = (v) => (v * 100).toFixed(2) + '%';
+  $('pi-out').innerHTML = json.pages.map(({ page, preview, boxes }) => {
+    const ims = byPage.get(page) || [];
+    return `
+    <div class="pi-page">
+      <h3>Page ${page} <span class="hint">${ims.filter((i) => !i.decor).length} items</span></h3>
+      <div class="pi-row">
+        <div class="pi-src" title="click for the full page">
+          <img src="${base}${preview}?thumb=1" data-full="${base}${preview}" alt="page ${page}" loading="lazy">
+          ${boxes.map((b) => `<i data-file="${b.file}"${decorFile.has(b.file) ? ' class="bx-decor"' : ''}
+            style="left:${pct(b.x)};top:${pct(b.y)};width:${pct(b.w)};height:${pct(b.h)}"></i>`).join('')}
+        </div>
+        ${ims.length ? `<div class="tpl-grid">${ims.map(card).join('')}</div>`
+          : '<p class="hint">Nothing extracted from this page — if it shows a product, the rules missed it.</p>'}
+      </div>
+    </div>`;
+  }).join('');
+  $('pi-out').querySelectorAll('img').forEach((img) => { img.onclick = () => zoom(img.dataset.full, img.alt); });
+  // Hover an item → its box lights up on the page render.
+  const light = (f, on) => $('pi-out').querySelectorAll(`[data-file="${f}"]`).forEach((el) => el.classList.toggle('lit', on));
+  $('pi-out').querySelectorAll('[data-file]').forEach((el) => {
+    el.onmouseenter = () => light(el.dataset.file, true);
+    el.onmouseleave = () => light(el.dataset.file, false);
+  });
+  showDecor();
+
+  const count = (k) => json.images.filter((i) => i.kind === k && !i.decor).length;
+  const decor = json.images.filter((i) => i.decor).length;
+  $('pi-zip').hidden = !json.images.length;
+  // Saved as "<pdf name>.zip"; inside, one folder of that name with a folder per page.
+  $('pi-zip').onclick = () => { location.href = `${base}all.zip?dl=${encodeURIComponent(file.name.replace(/\.pdf$/i, ''))}`; };
+  $('pi-msg').className = 'msg ok';
+  $('pi-msg').textContent = `${count('photo')} photos + ${count('swatch')} swatches from ${json.pageCount} pages`
+    + `${decor ? ` · ${decor} decoration hidden` : ''} · ${(json.ms / 1000).toFixed(1)} s`;
+});
+
+// Decoration is hidden, not dropped: the rules guess, and a wrong guess must be recoverable.
+function showDecor() {
+  const on = $('pi-decor').checked;
+  document.querySelectorAll('#pi-out .decor').forEach((f) => { f.hidden = !on; });
+}
+$('pi-decor').onchange = showDecor;

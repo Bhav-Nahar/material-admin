@@ -116,6 +116,7 @@ for (const [prefix, mod] of [
   ['/api/marketing', './routes/marketing'],
   ['/api/ads', './routes/ads'],
   ['/api/collections', './routes/collections'],
+  ['/api/pdf', './routes/pdf'],
 ]) {
   try {
     fastify.register(require(mod), { prefix });

@@ -237,3 +237,15 @@ test('the camera reproduces the measured foreshortening', () => {
   assert.ok(Math.abs(total - 35) < 1.5, `turn + azimuth = ${total}, should be ~35`);
   assert.ok(S3D.fov <= 22, 'a short lens splays the verticals; this wants a long one');
 });
+
+
+test('features: upright panel at the requested size, and refuses an empty list', async () => {
+  const { compositeFeatures } = require('../lib/productImages/imageComposer');
+  const swatch = (await sharp({ create: { width: 1400, height: 1400, channels: 3, background: '#8a5a2b' } })
+    .jpeg().toBuffer()).toString('base64');
+  const out = await compositeFeatures(swatch, { features: ['anti rust', 'a <b> & c'], sizeLabel: '2400 x 1200 mm', thicknessMm: 1, size: 1200 });
+  const meta = await sharp(Buffer.from(out, 'base64')).metadata();
+  assert.equal(meta.width, 1200);
+  assert.equal(meta.height, 1200);
+  await assert.rejects(compositeFeatures(swatch, { features: [' ', ''] }), /at least one/);
+});

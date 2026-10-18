@@ -20,6 +20,7 @@
   <a href="#templates">Flat templates</a>
   <a href="#rectify">Rectify a photo</a>
   <a href="#pdp">Room renders</a>
+  <a href="#pdfimg">PDF images</a>
 
   <div class="sec">Growth</div>
   <a href="#signals">Signals</a>
@@ -38,80 +39,141 @@
 <!-- ── Add product ───────────────────────────────────────────────── -->
 <section id="create" class="on">
   <h2>Add product</h2>
-  <p class="lede">
-    Fill in the attributes. The title, SEO title and meta description are <em>derived</em> from
-    them — don't write a title unless you need to override it. Preview first; nothing is written
-    until you press Create.
-  </p>
+  <p class="lede">Six short steps. Everything goes to Shopify as a <strong>draft</strong> — nothing is live until you press Publish.</p>
 
-  <h3>Identity</h3>
-  <div class="grid">
-    <div>
-      <label>Category *</label>
-      <select id="c-category">
-        <option value="Tiles">Tiles</option>
-        <option value="Laminates">Laminates</option>
-        <option value="Wallpaper">Wallpaper</option>
-      </select>
-    </div>
-    <div><label>SKU</label><input id="c-sku" placeholder="TL-90001"></div>
-    <div><label>Series</label><input id="c-series" placeholder="Marbles &amp; Stones"></div>
-    <div><label>Colour name</label><input id="c-colourName" placeholder="Carrara Mist"></div>
-    <div>
-      <label>Colour family <span title="comma separated">(list)</span></label>
-      <input id="c-colourFamily" placeholder="White, Grey">
-    </div>
-    <div><label>Look</label><input id="c-look" placeholder="Marble" list="l-look"></div>
-  </div>
+  <ol class="steps" id="c-steps"></ol>
 
-  <h3>Specification</h3>
-  <div class="grid">
-    <div><label>Material</label><input id="c-material" placeholder="Vitrified" list="l-material"></div>
-    <div><label>Finish</label><input id="c-finish" placeholder="Matte" list="l-finish"></div>
-    <div><label>Surface (list)</label><input id="c-surface" placeholder="Floor, Wall"></div>
-    <div><label>Pattern <span class="only">wallpaper</span></label><input id="c-pattern" placeholder="Floral"></div>
-    <div><label>Use case (list) <span class="only">laminates</span></label><input id="c-useCases" placeholder="Wardrobe"></div>
-    <div><label>Slip rating</label><input id="c-slipRating" placeholder="R10"></div>
-    <div><label>Applications (list)</label><input id="c-applications" placeholder="Living Room, Bedroom"></div>
-    <div><label>Design variants</label><input id="c-designVariants" type="number" placeholder="4"></div>
-  </div>
+  <!-- 1 ─────────────────────────────────────────────────────────── -->
+  <div class="step" data-title="Start">
+    <h3>Start from a similar product <span class="only">saves the most time</span></h3>
+    <input id="c-similar" placeholder="Type a product name — e.g. leather, fluted, marble…" autocomplete="off">
+    <div id="c-similar-list" class="similar"></div>
+    <p class="hint">Copies its attributes, features, notes and sizes. You still add your own colours and photos.</p>
 
-  <h3>Commercial</h3>
-  <div class="grid">
-    <div><label>Price *</label><input id="c-price" type="number" step="0.01" placeholder="129"></div>
-    <div><label>Price unit</label><input id="c-priceUnit" placeholder="Sq. Ft."></div>
-    <div><label>Size label</label><input id="c-sizeLabel" placeholder="1200 x 600 mm"></div>
-    <div><label>Thickness (mm)</label><input id="c-thicknessMm" type="number" step="0.1" placeholder="9"></div>
-    <div><label>Pack unit</label><input id="c-packUnit" placeholder="box"></div>
-    <div><label>Pieces per pack</label><input id="c-piecesPerPack" type="number" placeholder="4"></div>
-    <div><label>Coverage per pack</label><input id="c-coveragePerPack" type="number" step="0.01" placeholder="31.2"></div>
-    <div><label>Sample price</label><input id="c-samplePrice" type="number" step="0.01" placeholder="199"></div>
-  </div>
-
-  <h3>Copy &amp; caveats</h3>
-  <div class="grid" style="grid-template-columns:1fr">
-    <div>
-      <label>Install caveats (one per line)</label>
-      <textarea id="c-installCaveats" placeholder="2-3 mm spacer is mandatory&#10;Please expect a slight variation of pattern"></textarea>
-    </div>
-    <div>
-      <label>Title override <span class="only">optional</span></label>
-      <input id="c-title" placeholder="(derived)">
+    <h3>Basics</h3>
+    <div class="grid">
+      <div>
+        <label>Category *</label>
+        <select id="c-category">
+          <option value="Panels">Panels</option>
+          <option value="Laminates">Laminates</option>
+          <option value="Tiles">Tiles</option>
+          <option value="Wallpaper">Wallpaper</option>
+          <option value="Stone">Stone</option>
+        </select>
+      </div>
+      <div><label>Product code *</label><input id="c-sku" placeholder="LTHR01" style="text-transform:uppercase">
+        <p class="hint">SKUs are made for you: <code id="c-sku-eg">LAM-LTHR01-8X4-OLVGRN-MAT</code></p></div>
+      <div><label>Title <span class="only">optional</span></label><input id="c-title" placeholder="(made from the attributes)"></div>
     </div>
   </div>
 
-  <div class="row">
-    <button id="c-preview" class="primary">Preview</button>
-    <button id="c-apply" disabled>Create in Shopify</button>
-    <label style="margin:0"><input type="checkbox" id="c-active" style="width:auto"> create as ACTIVE</label>
-    <span id="c-msg" class="msg"></span>
+  <!-- 2 ─────────────────────────────────────────────────────────── -->
+  <div class="step" data-title="What it is">
+    <h3>Look</h3>
+    <div class="chips pick" data-for="c-look"></div>
+    <input id="c-look" placeholder="Other look…" class="other">
+    <h3>Finish</h3>
+    <div class="chips pick" data-for="c-finish"></div>
+    <input id="c-finish" placeholder="Other finish…" class="other">
+    <h3>Material</h3>
+    <div class="chips pick" data-for="c-material"></div>
+    <input id="c-material" placeholder="Other material…" class="other">
+    <div class="grid" style="margin-top:14px">
+      <div><label>Thickness (mm)</label><input id="c-thicknessMm" type="number" step="0.1" placeholder="1.2"></div>
+      <div><label>Flexibility</label><input id="c-flexibility" placeholder="90% bendable / Rigid"></div>
+    </div>
+    <h3>Features <span class="only">tap to add · up to 4</span></h3>
+    <div class="chips" id="c-feature-picks"></div>
+    <div class="grid" style="margin-top:8px">
+      <div><input class="c-feature" placeholder="Feature 1"></div>
+      <div><input class="c-feature" placeholder="Feature 2"></div>
+      <div><input class="c-feature" placeholder="Feature 3"></div>
+      <div><input class="c-feature" placeholder="Feature 4 (optional)"></div>
+    </div>
   </div>
-  <div class="note">
-    Products are created as <strong>DRAFT</strong> unless you tick ACTIVE — a live product with no
-    images is a page a shopper can reach the moment it's written.
+
+  <!-- 3 ─────────────────────────────────────────────────────────── -->
+  <div class="step" data-title="Where &amp; care">
+    <h3>Where to use</h3>
+    <div id="c-where" class="chips"></div>
+    <input id="c-where-other" placeholder="Other places — comma separated" style="margin-top:6px">
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-top:14px">
+      <div><label>Important note (one per line)</label>
+        <textarea id="c-installCaveats" placeholder="Slight variation in shade between batches"></textarea></div>
+      <div><label>Maintenance (one per line)</label>
+        <textarea id="c-careMaintenance" placeholder="Wipe with a soft damp cloth&#10;Avoid abrasive cleaners"></textarea></div>
+      <div><label>Installation (one per line)</label>
+        <textarea id="c-installationGuide" placeholder="Fix on a clean, dry, level wall&#10;Use panel adhesive"></textarea></div>
+    </div>
+    <details style="margin-top:12px">
+      <summary class="hint" style="cursor:pointer">More fields — series, surface, slip rating, sample price, stock…</summary>
+      <div class="grid" style="margin-top:10px">
+        <div><label>Series</label><input id="c-series" placeholder="Wooden Panels"></div>
+        <div><label>Surface (list)</label><input id="c-surface" placeholder="Wall"></div>
+        <div><label>Pattern</label><input id="c-pattern" placeholder="Floral"></div>
+        <div><label>Use case (list)</label><input id="c-useCases" placeholder="Wardrobe"></div>
+        <div><label>Slip rating</label><input id="c-slipRating" placeholder="R10"></div>
+        <div><label>Design variants</label><input id="c-designVariants" type="number" placeholder="4"></div>
+        <div><label>Sample price</label><input id="c-samplePrice" type="number" placeholder="199"></div>
+        <div><label>Stock per variant</label><input id="c-quantity" type="number" placeholder="0"></div>
+      </div>
+    </details>
   </div>
-  <div id="c-derived"></div>
-  <pre id="c-out" hidden></pre>
+
+  <!-- 4 ─────────────────────────────────────────────────────────── -->
+  <div class="step" data-title="Sizes &amp; price">
+    <div class="grid">
+      <div><label>Pack unit</label>
+        <select id="c-packUnit"><option>piece</option><option>sheet</option><option>box</option><option>roll</option><option>slab</option><option>panel</option></select></div>
+      <div><label>Pricing</label>
+        <p class="hint" style="margin-top:6px">Type <b>₹ / sq ft</b> or the <b>price per pack</b> — the other fills itself. The site shows ₹/sq ft; the cart charges per pack.</p></div>
+    </div>
+    <div class="scroll">
+      <table class="edit" id="c-sizes">
+        <thead><tr><th>Size *</th><th>₹ / sq ft</th><th>Price ₹ per pack *</th><th>MRP ₹ per pack</th><th>Pieces / pack</th><th>Coverage / pack (sq ft) <span class="hint">auto from size</span></th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <button id="c-add-size" style="margin-top:8px">+ Size</button>
+  </div>
+
+  <!-- 5 ─────────────────────────────────────────────────────────── -->
+  <div class="step" data-title="Colours &amp; photos">
+    <p class="hint">Each colour's photos show only when that colour is picked on the site. Its first photo is the main image. Leave the name blank for a single-colour product.</p>
+    <div id="c-colours"></div>
+    <button id="c-add-colour" style="margin-top:8px">+ Colour</button>
+    <h3>Colour family <span class="only">ticked for you from the colour names</span></h3>
+    <div id="c-family" class="chips"></div>
+    <h3>Images made from each colour's main photo</h3>
+    <div id="c-shot-kinds" class="chips"></div>
+    <p class="hint">Made as soon as you add photos — the main photo should be a flat, straight-on swatch.</p>
+  </div>
+
+  <!-- 6 ─────────────────────────────────────────────────────────── -->
+  <div class="step" data-title="Review &amp; create">
+    <h3>Description</h3>
+    <div class="row" style="margin-top:0">
+      <button id="c-describe">Draft with AI</button><span id="c-describe-msg" class="msg" style="margin:0"></span>
+    </div>
+    <textarea id="c-description" style="min-height:120px;margin-top:8px" placeholder="HTML or plain text — paragraphs and bullet lists"></textarea>
+    <div class="row">
+      <button id="c-preview">Refresh preview</button>
+      <button id="c-apply" class="primary" disabled>Create draft in Shopify</button>
+      <span id="c-msg" class="msg"></span>
+    </div>
+    <div id="c-derived"></div>
+    <pre id="c-out" hidden></pre>
+  </div>
+
+  <div class="row wizard-nav">
+    <button id="c-back">← Back</button>
+    <button id="c-next" class="primary">Next →</button>
+    <span id="c-step-msg" class="msg"></span>
+    <span style="flex:1"></span>
+    <span class="hint" id="c-saved"></span>
+    <button id="c-reset" title="Clear the form and start again">Start over</button>
+  </div>
 
   <datalist id="l-look"></datalist>
   <datalist id="l-material"></datalist>
@@ -235,6 +297,16 @@
       </p>
     </div>
   </div>
+  <label style="margin-top:12px;display:flex;gap:8px;align-items:center">
+    <input id="t-feat-on" type="checkbox" style="width:auto"> Add a features shot (zoom detail + callouts)
+  </label>
+  <div id="t-feat" class="grid" hidden>
+    <div><label>Feature 1</label><input class="t-feat-in" placeholder="Anti-Yellow &amp; UV Resistant"></div>
+    <div><label>Feature 2</label><input class="t-feat-in" placeholder="Light Weight"></div>
+    <div><label>Feature 3</label><input class="t-feat-in" placeholder="Durability &amp; Strength"></div>
+    <div><label>Feature 4 (optional)</label><input class="t-feat-in" placeholder="Vertical Application"></div>
+    <p class="hint">Icon is picked from the words: UV/sun, water, fire, light weight, durable, scratch/stain, termite, vertical/install, flexible — anything else gets a check mark.</p>
+  </div>
   <div class="row">
     <button id="t-run" class="primary">Build templates</button>
     <span id="t-msg" class="msg"></span>
@@ -310,6 +382,31 @@
   </div>
   <div id="x-note"></div>
   <div id="x-out" class="tpl-grid"></div>
+</section>
+
+<!-- ── PDF images ────────────────────────────────────────────────── -->
+<section id="pdfimg">
+  <h2>PDF images</h2>
+  <p class="lede">
+    Pulls every picture embedded in a catalogue PDF at its <strong>original resolution</strong>
+    — not a screenshot. Works whatever the layout, because a PDF stores each image once as its
+    own object. Transparent cutouts come out as PNG with their transparency; repeats are kept once.
+    Flat-colour <strong>swatches</strong> drawn as vector shapes are rendered at 300 dpi with their colour code.
+    Backgrounds reused across pages count as decoration: hidden, and left out of the zip.
+  </p>
+  <div class="grid">
+    <div>
+      <label>PDF</label>
+      <input id="pi-file" type="file" accept="application/pdf">
+    </div>
+  </div>
+  <div class="row">
+    <button id="pi-run" class="primary">Extract images</button>
+    <button id="pi-zip" hidden>Download all products (.zip)</button>
+    <label><input id="pi-decor" type="checkbox"> show decoration</label>
+    <span id="pi-msg" class="msg"></span>
+  </div>
+  <div id="pi-out"></div>
 </section>
 
 <!-- ── Room renders · Cycles PDP pack ────────────────────────────── -->

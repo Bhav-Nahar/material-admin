@@ -110,7 +110,7 @@ test('two variants sharing a size are refused before Shopify sees them', () => {
         { sizeLabel: '600 x 600 mm', thicknessMm: 10, price: 139 },
       ],
     }),
-    /two variants share the size/,
+    /two variants are both/,
   );
   // Distinct sizes are still fine.
   const ok = buildProductSet({
@@ -160,17 +160,16 @@ test('tiles carry a unit price measurement, which is what turns the PDP on', () 
   assert.equal(v.price, '129');
 });
 
-test('laminates and panels carry NONE — the sheet and the piece ARE the unit', () => {
-  // The omission is load-bearing, not laziness. Sending a measurement here would make
-  // the PDP print "₹X/sq ft" for a price that is per sheet. Omitted, perSqFt falls to
-  // 0 and the existing UI correctly renders "₹2,450/sheet" with a quantity stepper.
-  for (const [name, spec] of [['laminate', LAMINATE], ['panel', PANEL]]) {
-    const v = firstVariant(spec);
-    assert.equal(v.unitPriceMeasurement, undefined, `${name} must not claim a per-area rate`);
-    assert.equal(v.showUnitPrice, undefined, `${name} must not switch on unit pricing`);
-  }
-  // Coverage is still STORED for the laminate — it just does not price it.
-  assert.equal(variantMetafields(LAMINATE).coverage_per_pack, '32');
+test('laminates and panels show per sq ft too, while staying priced per sheet / piece', () => {
+  // Decided 2026-10-18: shoppers compare panels per sq ft. The variant price is still
+  // the PACK price Shopify charges; the measurement only adds the ₹/sq ft headline.
+  const v = firstVariant(LAMINATE);
+  assert.equal(v.price, String(LAMINATE.price), 'price stays the sheet price');
+  assert.equal(v.unitPriceMeasurement.quantityValue, 32);
+  assert.equal(v.showUnitPrice, true);
+  // price_unit still names what one pack IS — the readiness gate checks live products against it.
+  assert.equal(variantMetafields(LAMINATE).price_unit, 'Sheet');
+  assert.equal(variantMetafields(PANEL).price_unit, 'Piece');
 });
 
 test('wallpaper derives its coverage from the roll it is sold by', () => {
@@ -184,9 +183,18 @@ test('wallpaper derives its coverage from the roll it is sold by', () => {
 });
 
 test('a sq-ft category with nothing to divide by warns rather than going quiet', () => {
-  const { warnings } = buildProductSet({ ...TILE, coveragePerPack: undefined });
+  const bare = { ...TILE, coveragePerPack: undefined, sizeLabel: undefined };
+  const { warnings } = buildProductSet(bare);
   assert.ok(warnings.some((w) => /coverage_per_pack/.test(w)), warnings.join('|'));
-  assert.equal(firstVariant({ ...TILE, coveragePerPack: undefined }).unitPriceMeasurement, undefined);
+  assert.equal(firstVariant(bare).unitPriceMeasurement, undefined);
+});
+
+test('coverage is worked out from size × pieces when not typed, for every category', () => {
+  // 6 × 1200 × 600 mm = 4.32 m² = 46.5 sq ft — the figure TILE states outright.
+  assert.equal(firstVariant({ ...TILE, coveragePerPack: undefined }).unitPriceMeasurement.quantityValue, 46.5);
+  // "8X4" with no unit is a sheet in feet: 32 sq ft, which is also its per-sq-ft basis.
+  assert.equal(variantMetafields({ ...PANEL, sizeLabel: '8X4' }).coverage_per_pack, '32');
+  assert.equal(firstVariant({ ...PANEL, sizeLabel: '8X4' }).unitPriceMeasurement.quantityValue, 32);
 });
 
 test('price_unit defaults from the category, and a contradicting one is REJECTED', () => {
@@ -290,4 +298,33 @@ test('every metafield key this file WRITES is defined by the product model', () 
     ...Object.keys(VARIANT_TYPES).filter((k) => !defined.PRODUCTVARIANT.has(k)).map((k) => `VARIANT.${k}`),
   ];
   assert.deepEqual(missing, [], `written but never defined: ${missing.join(', ')}`);
+});
+
+test('size × colour: two options, every image alt-texted, each variant gets its colour image', () => {
+  const plan = buildProductSet({
+    ...PANEL,
+    look: 'Leather', finish: 'Textured', features: ['Light Weight'], flexibility: 'Flexible',
+    variants: [
+      { sizeLabel: '8 ft x 4 ft', colour: 'Walnut', price: 1200 },
+      { sizeLabel: '8 ft x 4 ft', colour: 'Ivory', price: 1200 },
+      { sizeLabel: '10 ft x 4 ft', colour: 'Walnut', price: 1500 },
+    ],
+    images: [
+      { url: 'https://x/ivory.jpg', colour: 'Ivory' },
+      { url: 'https://x/walnut.jpg', colour: 'Walnut', role: 'close-up texture' },
+    ],
+  });
+  const ps = plan.productSet;
+  assert.deepEqual(ps.productOptions.map((o) => [o.name, o.values.map((v) => v.name)]),
+    [['Size', ['8 ft x 4 ft', '10 ft x 4 ft']], ['Colour', ['Walnut', 'Ivory']]]);
+  assert.ok(ps.files.every((f) => f.alt && f.alt.length > 10), 'no blank alt');
+  assert.match(ps.files[1].alt, /^Walnut Leather .*Textured – close-up texture$/);
+  assert.deepEqual(ps.variants.map((v) => v.file.originalSource),
+    ['https://x/walnut.jpg', 'https://x/ivory.jpg', 'https://x/walnut.jpg']);
+  const mf = (k) => ps.metafields.find((m) => m.key === k)?.value;
+  assert.equal(mf('features'), '["Light Weight"]');
+  assert.equal(mf('flexibility'), 'Flexible');
+
+  assert.throws(() => buildProductSet({ ...PANEL, variants: [
+    { sizeLabel: 'A', colour: 'Red', price: 1 }, { sizeLabel: 'A', colour: 'Red', price: 2 }] }), /two variants are both "A \/ Red"/);
 });

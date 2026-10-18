@@ -98,7 +98,10 @@ test('each category names the unit its price is quoted in', () => {
 test('panel attributes are the values recorded in research §8', () => {
   // "Charcoal dominates" — 3,508 of the values read off their PLP.
   assert.deepEqual(kb.attributeValues('panels', 'material'), ['Charcoal', 'PVC', 'PU', 'MDF', 'WPC']);
-  assert.deepEqual(kb.attributeValues('panels', 'finish'), ['Texture', 'Matte', 'Velvet', 'Glossy', 'Metallic']);
+  // The research five, then what Material's own panels are sold as (quick-upload form).
+  assert.deepEqual(kb.attributeValues('panels', 'finish'),
+    ['Texture', 'Matte', 'Velvet', 'Glossy', 'Metallic', 'Textured', 'High Gloss', 'Suede']);
+  assert.ok(kb.isKnownValue('panels', 'look', 'Leather'));
   assert.ok(kb.isKnownValue('panels', 'material', 'charcoal'));
   // Stone is a sketch and says so, rather than carrying an invented vocabulary.
   assert.match(kb.forCategory('stone')._sourced, /sketch/);
