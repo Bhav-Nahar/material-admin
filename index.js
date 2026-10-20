@@ -89,8 +89,14 @@ const ASSETS = {
 for (const [url, [file, type]] of Object.entries(ASSETS)) {
   // Read per request, not cached at boot: editing the UI and hitting reload is the
   // whole development loop, and a cached read makes it look like the edit did nothing.
+  // `no-cache` for the same reason on the browser's side: with no header at all the browser
+  // may reuse its copy, so an open Add-product tab kept running the old form after a change
+  // (2026-10-19: laminates drawn in mm, one size drawing per colour). Revalidated every load.
   fastify.get(url, async (request, reply) =>
-    reply.type(type).send(readFileSync(path.join(__dirname, file), 'utf8')));
+    reply
+      .type(type)
+      .header('cache-control', 'no-cache')
+      .send(readFileSync(path.join(__dirname, file), 'utf8')));
 }
 
 fastify.get('/health', async () => {

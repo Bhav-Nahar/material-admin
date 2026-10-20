@@ -353,7 +353,7 @@ module.exports = async function (fastify) {
    * is the next step, and it should be taken with eyes on real output first.
    */
   fastify.post('/images/templates', async (req, reply) => {
-    const { photo, sizeLabel, thicknessMm, material, size, cols, repeats, features } = req.body || {};
+    const { photo, sizeLabel, thicknessMm, material, size, cols, repeats, features, category, only } = req.body || {};
     if (!photo || typeof photo !== 'string') {
       return reply.code(400).send({ success: false, error: 'photo (base64) is required', code: 'no_photo' });
     }
@@ -367,6 +367,8 @@ module.exports = async function (fastify) {
         ...(cols ? { cols: Number(cols) } : {}),
         ...(repeats ? { repeats: Number(repeats) } : {}),
         ...(Array.isArray(features) ? { features: features.map(String).slice(0, 4) } : {}),
+        ...(category ? { category: String(category) } : {}),
+        ...(Array.isArray(only) ? { only: only.map(String) } : {}),
       });
       return {
         success: true,

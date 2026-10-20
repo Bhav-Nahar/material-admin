@@ -253,7 +253,9 @@ function wirePhotos(c) {
       if (isExtra) c.images.push(...added);
       else c.images.splice(firstOf(c, (im) => im.shot || im.extra), 0, ...added);
       await Promise.all(added.map((im) => stage(c, im)));
-      if (!isExtra) try { await makeShots(c); } catch (err) { say('bad', err.message); }
+      if (!isExtra) {
+        try { await makeShots(c); } catch (err) { say('bad', err.message); }
+      }
     };
   });
   c.el.querySelector('.thumbs').onclick = (e) => {
@@ -402,10 +404,14 @@ function createBody() {
         url: im.url,
         role: im.role || (j ? `photo ${j + 1}` : 'main photo'),
         colour: named.length ? colourName(c) || undefined : undefined,
+        // Set on size drawings only: that image belongs to this colour's variants of that size.
+        size: im.size,
       }))),
   ];
   return {
     category: $('c-category').value, title: str('c-title'),
+    // The code alone, for the title and URL -- the full SKUs are per variant.
+    productCode: str('c-sku') ? letters(str('c-sku')).replace(/\s+/g, '') : undefined,
     finish: str('c-finish'), look: str('c-look'), material: str('c-material'),
     thicknessMm: num('c-thicknessMm'), applications: [...picked('c-where'), ...list('c-where-other')],
     flexibility: str('c-flexibility'), colourFamily: picked('c-family'),
@@ -429,31 +435,56 @@ const SHOT_KINDS = {
   studio: 'studio shot', thickness: 'thickness detail', features: 'features',
   isometric: 'size & dimensions', grout_grid: 'laid pattern', repeat_preview: 'pattern repeat',
 };
-chips('c-shot-kinds', Object.keys(SHOT_KINDS), ['studio', 'thickness', 'features']);
+chips('c-shot-kinds', Object.keys(SHOT_KINDS), ['studio', 'thickness', 'features', 'isometric']);
 $('c-shot-kinds').querySelectorAll('label').forEach((l) => {
   l.lastChild.textContent = SHOT_KINDS[l.querySelector('input').value];
 });
 
 async function makeShots(c) {
   const photo = c.images.find((im) => !im.shot && !im.extra);
-  const kinds = picked('c-shot-kinds');
-  const sizeLabel = sizeRows().map((tr) => val(tr, '.s-size'))[0];
-  const key = photo && JSON.stringify([photo.src.length, photo.src.slice(-64), kinds, features(), num('c-thicknessMm'), sizeLabel]);
+  const picks = picked('c-shot-kinds');
+  const kinds = picks.filter((id) => id !== 'isometric');
+  // Size drawings: one per SIZE, in THIS colour (user, 2026-10-19) -- Blue's 8X4 drawing shows
+  // the blue panel. Each is sent with its colour AND its size, and the server links it to that
+  // colour's variants of that size only (galleryFor), so 10X4 / Blue shows Blue's 10X4 drawing.
+  const sizes = picks.includes('isometric')
+    ? [...new Set(sizeRows().map((tr) => val(tr, '.s-size')).filter(Boolean))]
+    : [];
+  const key = photo && JSON.stringify([photo.src.length, photo.src.slice(-64), picks, features(), num('c-thicknessMm'), sizes, $('c-category').value]);
   if (c.shotKey === key) return;
   c.images = c.images.filter((im) => !im.shot);
   c.shotKey = key;
   renderThumbs(c);
-  if (!photo || !kinds.length) return;
+  if (!photo || (!kinds.length && !sizes.length)) return;
   say('', `making images for ${colourName(c) || 'your photos'}…`);
-  const r = await api('/api/products/images/templates', {
+  const ask = (only, sizeLabel) => api('/api/products/images/templates', {
     method: 'POST',
-    body: { photo: photo.src.split(',')[1], size: 2048, features: features(), sizeLabel, thicknessMm: num('c-thicknessMm') },
+    body: {
+      photo: photo.src.split(',')[1], size: 2048, features: features(), sizeLabel,
+      thicknessMm: num('c-thicknessMm'), category: $('c-category').value, only,
+    },
   });
-  if (!r.ok) throw new Error(`images for ${colourName(c) || 'photos'}: ${r.json?.error || r.status}`);
-  const shots = kinds.filter((id) => r.json.images[id])
-    .map((id) => ({ src: `data:image/jpeg;base64,${r.json.images[id]}`, role: SHOT_KINDS[id], shot: true, name: `${id}.jpg` }));
+  const [main, ...bySize] = await Promise.all([
+    kinds.length ? ask(kinds, sizes[0]) : null,
+    ...sizes.map((sz) => ask(['isometric'], sz)),
+  ]);
+  if (main && !main.ok) throw new Error(`images for ${colourName(c) || 'photos'}: ${main.json?.error || main.status}`);
+  const made = main?.json?.images || {};
+  const shots = [
+    ...kinds.filter((id) => made[id])
+      .map((id) => ({ src: `data:image/jpeg;base64,${made[id]}`, role: SHOT_KINDS[id], shot: true, name: `${id}.jpg` })),
+    ...sizes.map((sz, i) => [sz, bySize[i]?.json?.images?.isometric]).filter(([, b64]) => b64)
+      .map(([sz, b64]) => ({ src: `data:image/jpeg;base64,${b64}`, role: `size & dimensions – ${sz}`, size: sz, shot: true, name: 'size.jpg' })),
+  ];
   c.images.splice(firstOf(c, (im) => im.extra), 0, ...shots);
-  say('', '');
+  // Say which image could not be made, rather than leaving a colour quietly one short.
+  const failed = [
+    ...kinds.filter((id) => !made[id] && !(id === 'features' && !features().length)).map((id) => SHOT_KINDS[id]),
+    ...sizes.filter((sz, i) => !bySize[i]?.json?.images?.isometric).map((sz) => `size drawing ${sz}`),
+  ];
+  say(failed.length ? 'bad' : '', failed.length
+    ? `Couldn't make ${failed.join(', ')} for ${colourName(c) || 'this colour'} — try another main photo`
+    : '');
   await Promise.all(shots.map((im) => stage(c, im)));
 }
 
@@ -855,6 +886,7 @@ $('t-run').onclick = () => busy($('t-run'), async () => {
       sizeLabel: $('t-size').value.trim(),
       thicknessMm: num('t-thick'),
       material: $('t-material').value,
+      category: $('t-category').value,
       size: num('t-outsize'),
       cols: Number($('t-cols').value),
       repeats: Number($('t-cols').value),

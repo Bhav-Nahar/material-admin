@@ -328,3 +328,56 @@ test('size × colour: two options, every image alt-texted, each variant gets its
   assert.throws(() => buildProductSet({ ...PANEL, variants: [
     { sizeLabel: 'A', colour: 'Red', price: 1 }, { sizeLabel: 'A', colour: 'Red', price: 2 }] }), /two variants are both "A \/ Red"/);
 });
+
+test('tags come from look, finish, material, colour family and where-to-use, deduped', () => {
+  const ps = buildProductSet({
+    ...PANEL, look: 'Leather', finish: 'Matte', material: 'PVC',
+    colourFamily: ['Green', 'Grey'], applications: ['TV Unit', 'Wardrobe', 'tv unit'], tags: ['New'],
+  }).productSet;
+  assert.deepEqual(ps.tags, ['New', 'Leather', 'Matte', 'PVC', 'Green', 'Grey', 'TV Unit', 'Wardrobe']);
+});
+
+test('each variant gets its colour, the shared images, and ONLY its own size drawing', () => {
+  const { galleryFor } = require('../lib/productCreate');
+  const images = [
+    { colour: 'Olive' }, { colour: 'Dark' },
+    { colour: null, size: '8X4' }, { colour: null, size: '10X4' }, { colour: null, size: null },
+  ];
+  assert.deepEqual(galleryFor(images, 'Olive', '8X4'), [0, 2, 4]);
+  assert.deepEqual(galleryFor(images, 'Olive', '10X4'), [0, 3, 4]);
+  assert.deepEqual(galleryFor(images, 'Dark', '10X4'), [1, 3, 4]);
+  // single-colour product: no colour on anything, still split by size
+  assert.deepEqual(galleryFor([{}, { size: '8X4' }, { size: '10X4' }], undefined, '10X4'), [0, 2]);
+});
+
+test('title and handle carry the product code, and a size only when there is one', () => {
+  const multi = buildProductSet({
+    ...PANEL, productCode: 'SK0102', look: 'Leather',
+    variants: [
+      { sizeLabel: '8X4', colour: 'Brown', price: 1, sku: 'PNL-SK0102-8X4-BROWN-MAT' },
+      { sizeLabel: '10X4', colour: 'Blue', price: 1, sku: 'PNL-SK0102-10X4-BLUE-MAT' },
+    ],
+  });
+  assert.match(multi.derived.title, /SK0102/);
+  assert.doesNotMatch(multi.derived.title, /PNL-SK0102|8X4|10X4|Brown|Blue/);
+  assert.doesNotMatch(multi.productSet.handle, /8x4|brown|pnl-sk0102/);
+  const single = buildProductSet({ ...PANEL, productCode: 'SK0102', variants: [{ sizeLabel: '8X4', colour: 'Brown', price: 1 }] });
+  assert.match(single.derived.title, /Brown · 8X4/);
+});
+
+test('per-colour size drawings: a variant gets its OWN colour drawing of its OWN size', () => {
+  const { galleryFor } = require('../lib/productCreate');
+  const images = [
+    { colour: 'Brown' }, { colour: 'Brown', size: '8X4' }, { colour: 'Brown', size: '10X4' },
+    { colour: 'Blue' }, { colour: 'Blue', size: '8X4' }, { colour: 'Blue', size: '10X4' },
+  ];
+  assert.deepEqual(galleryFor(images, 'Blue', '10X4'), [3, 5]);
+  assert.deepEqual(galleryFor(images, 'Brown', '8X4'), [0, 1]);
+});
+
+test('variants keep selling at zero stock (made to order) unless told otherwise', () => {
+  const vs = buildProductSet({ ...PANEL, quantity: 0 }).productSet.variants;
+  assert.ok(vs.every((v) => v.inventoryPolicy === 'CONTINUE'));
+  assert.ok(vs.every((v) => v.inventoryItem.tracked === true), 'stock is still counted');
+  assert.equal(buildProductSet({ ...PANEL, inventoryPolicy: 'DENY' }).productSet.variants[0].inventoryPolicy, 'DENY');
+});

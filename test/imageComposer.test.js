@@ -249,3 +249,16 @@ test('features: upright panel at the requested size, and refuses an empty list',
   assert.equal(meta.height, 1200);
   await assert.rejects(compositeFeatures(swatch, { features: [' ', ''] }), /at least one/);
 });
+
+test('thickness shot survives photo sizes whose crop rounds 1px past the edge', async () => {
+  // 856x1365 is SK0102's Blue photo: the crop's left and width rounded separately and
+  // overran the raster, so libvips threw "bad extract area" and the shot was dropped.
+  const { buildTemplates } = require('../lib/productImages/imageComposer');
+  const b64 = (await sharp({ create: { width: 856, height: 1365, channels: 3, background: '#2b4a6b' } })
+    .jpeg().toBuffer()).toString('base64');
+  for (const size of [900, 2048]) {
+    const out = await buildTemplates(b64, { thicknessMm: 1.2, sizeLabel: '8X4', size, only: ['thickness'] });
+    assert.deepEqual(out.errors, {}, `size ${size}`);
+    assert.ok(out.images.thickness);
+  }
+});
